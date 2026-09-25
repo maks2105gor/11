@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#1f2a44">
+  <meta name="description" content="Amazing Table — Train Brain: тренажёр внимания и скорости чтения на таблицах Шульте">
+  <title>Amazing Table</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main id="app">
+    <!-- Menu -->
+    <section class="screen active" id="screen-menu">
+      <header class="brand">
+        <div class="logo" aria-hidden="true">
+          <span>1</span><span>7</span><span>4</span><span>9</span>
+        </div>
+        <h1>Amazing Table</h1>
+        <p class="tagline">Train Brain</p>
+      </header>
+
+      <div class="card">
+        <h2>Режим</h2>
+        <div class="modes" id="mode-list" role="radiogroup" aria-label="Режим"></div>
+        <p class="mode-hint" id="mode-hint"></p>
+      </div>
+
+      <div class="card">
+        <h2>Размер таблицы</h2>
+        <div class="sizes" id="size-list" role="radiogroup" aria-label="Размер"></div>
+        <p class="best-line" id="best-line"></p>
+      </div>
+
+      <button class="btn primary big" id="btn-start">Играть</button>
+      <div class="row">
+        <button class="btn" id="btn-stats">Статистика</button>
+        <button class="btn" id="btn-settings">Настройки</button>
+        <button class="btn" id="btn-help">Как играть</button>
+      </div>
+    </section>
+
+    <!-- Game -->
+    <section class="screen" id="screen-game">
+      <div class="hud">
+        <button class="icon-btn" id="btn-quit" aria-label="Выйти в меню">✕</button>
+        <div class="hud-item">
+          <span class="hud-label">Найдите</span>
+          <span class="hud-target" id="hud-target">1</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">Время</span>
+          <span class="hud-value" id="hud-time">0.00</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">Ошибки</span>
+          <span class="hud-value" id="hud-miss">0</span>
+        </div>
+      </div>
+      <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+      <div class="board-wrap">
+        <div class="board" id="board"></div>
+        <div class="focus-dot" id="focus-dot" aria-hidden="true"></div>
+        <div class="countdown" id="countdown" aria-live="assertive"></div>
+      </div>
+      <p class="game-hint" id="game-hint"></p>
+    </section>
+
+    <!-- Result -->
+    <section class="screen" id="screen-result">
+      <div class="card result">
+        <p class="result-badge" id="result-badge">Новый рекорд!</p>
+        <h2 id="result-title">Готово!</h2>
+        <div class="stars" id="result-stars"></div>
+        <p class="result-time" id="result-time">0.00</p>
+        <p class="result-sub" id="result-rating"></p>
+        <dl class="result-grid">
+          <div><dt>Ошибки</dt><dd id="result-miss">0</dd></div>
+          <div><dt>На ячейку</dt><dd id="result-per">0</dd></div>
+          <div><dt>Рекорд</dt><dd id="result-best">—</dd></div>
+        </dl>
+      </div>
+      <button class="btn primary big" id="btn-again">Ещё раз</button>
+      <button class="btn" id="btn-menu">В меню</button>
+    </section>
+
+    <!-- Stats -->
+    <section class="screen" id="screen-stats">
+      <div class="topbar">
+        <button class="icon-btn" data-back aria-label="Назад">←</button>
+        <h2>Статистика</h2>
+      </div>
+      <div class="card">
+        <div class="totals" id="totals"></div>
+      </div>
+      <div class="card">
+        <h3>Рекорды</h3>
+        <div class="table-scroll"><table class="records" id="records"></table></div>
+      </div>
+      <div class="card">
+        <h3>Последние игры</h3>
+        <ul class="history" id="history"></ul>
+      </div>
+      <button class="btn danger" id="btn-reset">Сбросить статистику</button>
+    </section>
+
+    <!-- Settings -->
+    <section class="screen" id="screen-settings">
+      <div class="topbar">
+        <button class="icon-btn" data-back aria-label="Назад">←</button>
+        <h2>Настройки</h2>
+      </div>
+      <div class="card settings">
+        <label class="toggle"><span>Показывать, что искать<small>Подсказка над таблицей</small></span>
+          <input type="checkbox" data-setting="showTarget"><i></i></label>
+        <label class="toggle"><span>Отмечать найденные<small>Найденные ячейки тускнеют</small></span>
+          <input type="checkbox" data-setting="markFound"><i></i></label>
+        <label class="toggle"><span>Перемешивать после нажатия<small>Сложный режим: таблица меняется после каждого верного ответа</small></span>
+          <input type="checkbox" data-setting="shuffleOnHit"><i></i></label>
+        <label class="toggle"><span>Точка фокуса<small>Смотрите в центр, ищите периферийным зрением</small></span>
+          <input type="checkbox" data-setting="focusDot"><i></i></label>
+        <label class="toggle"><span>Отсчёт перед стартом<small>3 — 2 — 1</small></span>
+          <input type="checkbox" data-setting="countdown"><i></i></label>
+        <label class="toggle"><span>Звук</span>
+          <input type="checkbox" data-setting="sound"><i></i></label>
+        <label class="toggle"><span>Вибрация при ошибке</span>
+          <input type="checkbox" data-setting="vibrate"><i></i></label>
+        <div class="theme-row">
+          <span>Тема</span>
+          <div class="seg" id="theme-seg">
+            <button data-theme-value="auto">Авто</button>
+            <button data-theme-value="light">Светлая</button>
+            <button data-theme-value="dark">Тёмная</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Help -->
+    <section class="screen" id="screen-help">
+      <div class="topbar">
+        <button class="icon-btn" data-back aria-label="Назад">←</button>
+        <h2>Как играть</h2>
+      </div>
+      <div class="card prose">
+        <p><b>Таблица Шульте</b> — классический тренажёр внимания, периферийного зрения и скорости чтения.</p>
+        <p>Нажимайте на ячейки по порядку как можно быстрее. Таймер запускается с первого нажатия.</p>
+        <h3>Режимы</h3>
+        <ul>
+          <li><b>Числа</b> — от 1 до последнего.</li>
+          <li><b>Обратный счёт</b> — от последнего к 1.</li>
+          <li><b>Буквы</b> — по алфавиту (без Ё, Й, Ъ, Ь).</li>
+          <li><b>Красно-чёрная</b> (таблица Горбова) — чередуйте: чёрная 1, красная с наибольшим числом, чёрная 2, следующая красная по убыванию и так далее. Тренирует переключение внимания. В тёмной теме «чёрные» числа светлые.</li>
+        </ul>
+        <h3>Советы</h3>
+        <ul>
+          <li>Держите взгляд в центре таблицы и старайтесь видеть её целиком.</li>
+          <li>Не проговаривайте числа про себя.</li>
+          <li>Занимайтесь по 5–10 минут в день — результат растёт быстро.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
