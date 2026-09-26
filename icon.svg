@@ -1,13 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#1f2a44"/>
-  <g font-family="system-ui, sans-serif" font-weight="800" font-size="120" text-anchor="middle" dominant-baseline="central">
-    <rect x="72" y="72" width="170" height="170" rx="36" fill="#ffffff"/>
-    <rect x="270" y="72" width="170" height="170" rx="36" fill="#3d6df2"/>
-    <rect x="72" y="270" width="170" height="170" rx="36" fill="#3d6df2"/>
-    <rect x="270" y="270" width="170" height="170" rx="36" fill="#ffffff"/>
-    <text x="157" y="162" fill="#1f2a44">1</text>
-    <text x="355" y="162" fill="#ffffff">7</text>
-    <text x="157" y="360" fill="#ffffff">4</text>
-    <text x="355" y="360" fill="#d92d3a">9</text>
+  <rect width="512" height="512" rx="112" fill="#4b5058"/>
+  <g stroke="#4b5058" stroke-width="10" stroke-linejoin="round">
+    <rect x="40" y="40" width="432" height="432" rx="72" fill="#fbf5df"/>
+    <path d="M40 300H300V472H112A72 72 0 0 1 40 400Z" fill="#f5c68f"/>
+    <path d="M300 40H400A72 72 0 0 1 472 112V240H300Z" fill="#bfe2d3"/>
+    <line x1="300" y1="40" x2="300" y2="472"/>
+    <line x1="300" y1="240" x2="472" y2="240"/>
+    <ellipse cx="170" cy="170" rx="100" ry="100" fill="#f6bcb5"/>
+  </g>
+  <g font-family="Oswald, 'Arial Narrow', sans-serif" font-weight="700" text-anchor="middle" fill="#4b5058">
+    <text x="170" y="212" font-size="118">9</text>
+    <text x="386" y="178" font-size="110">4</text>
+    <text x="386" y="400" font-size="140" fill="#c9303a">7</text>
+    <text x="170" y="430" font-size="110">12</text>
   </g>
 </svg>

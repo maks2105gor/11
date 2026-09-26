@@ -20,7 +20,7 @@ export const MODES = {
   },
 };
 
-// Levels of the chaotic board. The expert level has the same 90 cells as the hard one,
+// Levels of the chaotic board. The expert level has 120 cells,
 // but its labels are tilted and found cells are not marked.
 export const CHAOS_LEVELS = {
   15: { title: 'Лёгкий', cells: 15 },
@@ -28,7 +28,7 @@ export const CHAOS_LEVELS = {
   30: { title: 'Лёгкий', cells: 30 },
   60: { title: 'Средний', cells: 60 },
   90: { title: 'Сложный', cells: 90 },
-  expert: { title: 'Эксперт', cells: 90, expert: true },
+  expert: { title: 'Эксперт', cells: 120, expert: true },
 };
 
 export const LAYOUTS = {
@@ -181,6 +181,12 @@ export function formatTime(ms) {
   const sec = totalSec - min * 60;
   const secStr = sec.toFixed(2).padStart(5, '0');
   return min > 0 ? `${min}:${secStr}` : sec.toFixed(2);
+}
+
+// Game clock as on the board's timer plate: 00:58.
+export function formatClock(ms) {
+  const sec = Math.floor(ms / 1000);
+  return `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
 }
 
 // Rough attention rating based on seconds per cell; mistakes add a penalty.

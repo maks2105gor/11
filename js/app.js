@@ -1,6 +1,6 @@
 import {
   MODES, LAYOUTS, CHAOS_LEVELS, levels, isValidLevel, levelLabel, isExpert, needsUnderline, createGame, tap, currentTarget, elapsed, shuffle,
-  pause, resume, formatTime, rating, addResult, summarize, recordKey, resultKey,
+  pause, resume, formatTime, formatClock, rating, addResult, summarize, recordKey, resultKey,
 } from './logic.js';
 import { generateChaos } from './chaos.js';
 
@@ -17,7 +17,6 @@ const DEFAULT_SETTINGS = {
   countdown: true,
   sound: true,
   vibrate: true,
-  theme: 'auto',
 };
 const DEFAULT_BOARD = { mode: 'numbers', layout: 'chaos', level: 30 };
 
@@ -85,14 +84,6 @@ function back() {
 }
 $$('[data-back]').forEach((b) => b.addEventListener('click', back));
 
-// ---------- Theme ----------
-function applyTheme() {
-  const t = state.settings.theme;
-  if (t === 'auto') document.documentElement.removeAttribute('data-theme');
-  else document.documentElement.setAttribute('data-theme', t);
-  $$('#theme-seg button').forEach((b) => b.classList.toggle('on', b.dataset.themeValue === t));
-}
-
 // ---------- Menu ----------
 const MODE_ICONS = {
   numbers: '1 2 3',
@@ -121,7 +112,7 @@ function fitLevel() {
 
 function renderMenu() {
   $('#layout-list').replaceChildren(...Object.entries(LAYOUTS).map(([key, layout]) =>
-    chip(`<span class="ico">${key === 'chaos' ? '◩ ◔ ▱' : '▦ ▦ ▦'}</span>${layout.title}`, key === state.layout, () => {
+    chip(`<span class="ico">${key === 'chaos' ? '17 · 4 · 62' : '3 × 3'}</span>${layout.title}`, key === state.layout, () => {
       state.layout = key;
       fitLevel();
       save();
@@ -152,7 +143,7 @@ function renderMenu() {
   const best = state.stats.best[recordKey(state.mode, state.layout, state.level)];
   $('#best-line').innerHTML = best
     ? `Рекорд: <b>${formatTime(best.time)} с</b>`
-    : 'Рекорда пока нет — самое время его поставить';
+    : 'рекорда пока нет';
 }
 
 // ---------- Board rendering ----------
@@ -221,9 +212,9 @@ function renderGrid() {
   grid.style.setProperty('--n', game.level);
   wrap.style.setProperty('--ar', 1);
   grid.innerHTML = '';
-  for (const item of game.board) {
+  game.board.forEach((item, i) => {
     const b = document.createElement('button');
-    b.className = 'cell';
+    b.className = `cell f${game.fills[i]}`;
     b.type = 'button';
     b.dataset.id = item.id;
     b.textContent = item.label;
@@ -231,7 +222,7 @@ function renderGrid() {
     if (item.id < game.next && marksFound()) b.classList.add('found');
     b.setAttribute('aria-label', ariaLabel(item));
     grid.append(b);
-  }
+  });
 }
 
 function ariaLabel(item) {
@@ -294,7 +285,7 @@ function renderHud() {
 }
 
 function tickTimer() {
-  $('#hud-time').textContent = formatTime(elapsed(game));
+  $('#hud-time').textContent = formatClock(elapsed(game));
 }
 
 // ---------- Game flow ----------
@@ -302,6 +293,11 @@ async function startGame() {
   stopGame();
   game = createGame(state.mode, state.layout, state.level);
   const chaos = game.layout === 'chaos';
+  // Grid cells get poster colours by position; red labels keep to paper and mint.
+  game.fills = game.board.map(() => {
+    const f = Math.random() < 0.65 ? 0 : 1 + Math.floor(Math.random() * 3);
+    return game.mode === 'gorbov' && f !== 2 ? 0 : f;
+  });
   grid.hidden = chaos;
   svg.toggleAttribute('hidden', !chaos); // SVG elements have no .hidden property
   if (chaos) {
@@ -324,7 +320,7 @@ async function startGame() {
   renderBoard();
   renderHud();
   setPaused(false);
-  $('#hud-time').textContent = '0.00';
+  $('#hud-time').textContent = formatClock(0);
   $('#focus-dot').classList.toggle('on', state.settings.focusDot);
   $('#game-hint').textContent = MODES[state.mode].hint.replace('N', game.sequence.length);
   show('game');
@@ -364,7 +360,7 @@ function stopGame() {
 
 function setPaused(on) {
   $('#paused').hidden = !on;
-  $('#btn-pause').textContent = on ? '▶' : 'II';
+  $('#pause-icon').textContent = on ? '▶' : 'II';
   $('#btn-pause').setAttribute('aria-label', on ? 'Продолжить' : 'Пауза');
 }
 
@@ -505,9 +501,9 @@ function renderStats() {
   const { history, best } = state.stats;
   const totalTime = history.reduce((s, r) => s + r.time, 0);
   $('#totals').innerHTML = `
-    <div><b>${history.length}</b><span>Игр</span></div>
-    <div><b>${Object.keys(best).length}</b><span>Рекордов</span></div>
-    <div><b>${Math.round(totalTime / 60000)}</b><span>Минут</span></div>`;
+    <div class="tile"><b>${history.length}</b><span>Игр</span></div>
+    <div class="tile"><b>${Object.keys(best).length}</b><span>Рекордов</span></div>
+    <div class="tile"><b>${Math.round(totalTime / 60000)}</b><span>Минут</span></div>`;
 
   $('#records').innerHTML = recordsTable('chaos') + recordsTable('grid');
 
@@ -556,11 +552,6 @@ $$('[data-setting]').forEach((input) => {
     save();
   });
 });
-$$('#theme-seg button').forEach((b) => b.addEventListener('click', () => {
-  state.settings.theme = b.dataset.themeValue;
-  save();
-  applyTheme();
-}));
 
 $('#btn-settings').addEventListener('click', () => show('settings'));
 $('#btn-help').addEventListener('click', () => show('help'));
@@ -576,7 +567,6 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // ---------- Init ----------
-applyTheme();
 renderMenu();
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {

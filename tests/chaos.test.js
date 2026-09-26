@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { generateChaos, mulberry32, MIN_LABEL } from '../js/chaos.js';
 
 const FIELDS = [[1600, 900], [900, 1500]];
-const COUNTS = [25, 30, 60, 90];
+const COUNTS = [25, 30, 60, 90, 120];
 
 test('boards have exactly n cells with sane label boxes', () => {
   for (const [W, H] of FIELDS) {

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   MODES, LAYOUTS, levels, cellCount, buildSequence, createGame, tap, currentTarget, elapsed,
   formatTime, addResult, summarize, shuffle, isValidLevel, rating, pause, resume, recordKey, resultKey,
-  isExpert, levelLabel, needsUnderline,
+  isExpert, levelLabel, needsUnderline, formatClock,
 } from '../js/logic.js';
 
 test('every mode builds a full sequence for every level of every layout', () => {
@@ -83,6 +83,12 @@ test('pause stops the clock and blocks taps', () => {
   assert.equal(tap(g, 1, 9000), 'hit');
 });
 
+test('formatClock', () => {
+  assert.equal(formatClock(0), '00:00');
+  assert.equal(formatClock(58999), '00:58');
+  assert.equal(formatClock(125000), '02:05');
+});
+
 test('formatTime', () => {
   assert.equal(formatTime(12345), '12.35');
   assert.equal(formatTime(75500), '1:15.50');
@@ -121,16 +127,16 @@ test('addResult tracks records and history', () => {
   assert.equal(summarize(res.stats.history, 'letters-3'), null);
 });
 
-test('expert level has 90 cells and its own records', () => {
+test('expert level has 120 cells and its own records', () => {
   const g = createGame('numbers', 'chaos', 'expert');
-  assert.equal(g.sequence.length, 90);
+  assert.equal(g.sequence.length, 120);
   assert.equal(isExpert('chaos', 'expert'), true);
   assert.equal(isExpert('chaos', 90), false);
   assert.equal(isValidLevel('letters', 'chaos', 'expert'), false);
-  assert.equal(levelLabel('chaos', 'expert'), 'Эксперт 90');
+  assert.equal(levelLabel('chaos', 'expert'), 'Эксперт 120');
   assert.equal(levelLabel('chaos', 90), 'Сложный 90');
   assert.notEqual(recordKey('numbers', 'chaos', 'expert'), recordKey('numbers', 'chaos', 90));
-  assert.ok(rating(200000, 90, 0, 'chaos', true).stars >= rating(200000, 90, 0, 'chaos').stars);
+  assert.ok(rating(200000, 120, 0, 'chaos', true).stars >= rating(200000, 120, 0, 'chaos').stars);
 });
 
 test('numbers that read as another number upside down are underlined', () => {
