@@ -347,11 +347,25 @@ function renderStats() {
 }
 
 $('#btn-stats').addEventListener('click', () => { renderStats(); show('stats'); });
-$('#btn-reset').addEventListener('click', () => {
-  if (!confirm('Удалить все рекорды и историю игр?')) return;
+// Two-step confirmation inside the page: the first tap arms the button, the second one resets.
+let resetTimer = null;
+const resetBtn = $('#btn-reset');
+resetBtn.addEventListener('click', () => {
+  if (!resetTimer) {
+    resetBtn.textContent = 'Нажмите ещё раз, чтобы удалить всё';
+    resetTimer = setTimeout(() => {
+      resetTimer = null;
+      resetBtn.textContent = 'Сбросить статистику';
+    }, 3000);
+    return;
+  }
+  clearTimeout(resetTimer);
+  resetTimer = null;
+  resetBtn.textContent = 'Статистика сброшена';
   state.stats = { best: {}, history: [] };
   save();
   renderStats();
+  setTimeout(() => { resetBtn.textContent = 'Сбросить статистику'; }, 1500);
 });
 
 // ---------- Settings ----------
