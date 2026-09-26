@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   MODES, LAYOUTS, levels, cellCount, buildSequence, createGame, tap, currentTarget, elapsed,
   formatTime, addResult, summarize, shuffle, isValidLevel, rating, pause, resume, recordKey, resultKey,
+  isExpert, levelLabel, needsUnderline,
 } from '../js/logic.js';
 
 test('every mode builds a full sequence for every level of every layout', () => {
@@ -118,4 +119,30 @@ test('addResult tracks records and history', () => {
   assert.equal(sum.average, 30000);
   assert.equal(sum.last, 20000);
   assert.equal(summarize(res.stats.history, 'letters-3'), null);
+});
+
+test('expert level has 90 cells and its own records', () => {
+  const g = createGame('numbers', 'chaos', 'expert');
+  assert.equal(g.sequence.length, 90);
+  assert.equal(isExpert('chaos', 'expert'), true);
+  assert.equal(isExpert('chaos', 90), false);
+  assert.equal(isValidLevel('letters', 'chaos', 'expert'), false);
+  assert.equal(levelLabel('chaos', 'expert'), 'Эксперт 90');
+  assert.equal(levelLabel('chaos', 90), 'Сложный 90');
+  assert.notEqual(recordKey('numbers', 'chaos', 'expert'), recordKey('numbers', 'chaos', 90));
+  assert.ok(rating(200000, 90, 0, 'chaos', true).stars >= rating(200000, 90, 0, 'chaos').stars);
+});
+
+test('numbers that read as another number upside down are underlined', () => {
+  const labels = new Set(Array.from({ length: 90 }, (_, i) => String(i + 1)));
+  for (const n of ['6', '9', '18', '81', '19', '61', '68', '89']) {
+    assert.equal(needsUnderline(n, labels), true, n);
+  }
+  for (const n of ['1', '8', '11', '69', '96', '88', '10', '80', '7', '25', '16', '66', '86']) {
+    assert.equal(needsUnderline(n, labels), false, n);
+  }
+  // 16, 66 and 86 would turn into 91, 99 and 98, which are not on a board of 90.
+  // 6 has no partner when the board stops at 6.
+  assert.equal(needsUnderline('6', new Set(['1', '2', '3', '4', '5', '6'])), false);
+  assert.equal(needsUnderline('А', labels), false);
 });

@@ -1,14 +1,14 @@
 // Pure game logic for Schulte tables. No DOM access, so it can be tested in Node.
 
-// sizes: grid side lengths; chaos: cell counts on the chaotic board.
+// sizes: grid side lengths; chaos: keys of CHAOS_LEVELS.
 export const MODES = {
   numbers: {
     title: 'Числа', hint: 'Найдите числа по порядку от 1 до N',
-    sizes: [3, 4, 5, 6, 7, 8, 9], chaos: [30, 60, 90],
+    sizes: [3, 4, 5, 6, 7, 8, 9], chaos: [30, 60, 90, 'expert'],
   },
   reverse: {
     title: 'Обратный счёт', hint: 'Найдите числа от N до 1',
-    sizes: [3, 4, 5, 6, 7, 8, 9], chaos: [30, 60, 90],
+    sizes: [3, 4, 5, 6, 7, 8, 9], chaos: [30, 60, 90, 'expert'],
   },
   letters: {
     title: 'Буквы', hint: 'Найдите буквы в алфавитном порядке',
@@ -16,8 +16,19 @@ export const MODES = {
   },
   gorbov: {
     title: 'Красно-чёрная', hint: 'Чередуйте: чёрные по возрастанию, красные по убыванию',
-    sizes: [3, 4, 5, 6, 7], chaos: [30, 60, 90],
+    sizes: [3, 4, 5, 6, 7], chaos: [30, 60, 90, 'expert'],
   },
+};
+
+// Levels of the chaotic board. The expert level has the same 90 cells as the hard one,
+// but its labels are tilted and found cells are not marked.
+export const CHAOS_LEVELS = {
+  15: { title: 'Лёгкий', cells: 15 },
+  25: { title: 'Сложный', cells: 25 },
+  30: { title: 'Лёгкий', cells: 30 },
+  60: { title: 'Средний', cells: 60 },
+  90: { title: 'Сложный', cells: 90 },
+  expert: { title: 'Эксперт', cells: 90, expert: true },
 };
 
 export const LAYOUTS = {
@@ -47,11 +58,26 @@ export function isValidLevel(mode, layout, level) {
 }
 
 export function cellCount(layout, level) {
-  return layout === 'grid' ? level * level : level;
+  return layout === 'grid' ? level * level : CHAOS_LEVELS[level].cells;
+}
+
+export function isExpert(layout, level) {
+  return layout === 'chaos' && Boolean(CHAOS_LEVELS[level]?.expert);
 }
 
 export function levelLabel(layout, level) {
-  return layout === 'grid' ? `${level}×${level}` : String(level);
+  if (layout === 'grid') return `${level}×${level}`;
+  const { title, cells } = CHAOS_LEVELS[level];
+  return `${title} ${cells}`;
+}
+
+// Labels that turn into another label on the board when read upside down (6 and 9, 68 and 89)
+// get underlined, so rotated numbers stay unambiguous.
+const FLIP = { 0: '0', 1: '1', 6: '9', 8: '8', 9: '6' };
+export function needsUnderline(label, labels) {
+  if (!/^\d+$/.test(label) || [...label].some((d) => !(d in FLIP))) return false;
+  const flipped = [...label].reverse().map((d) => FLIP[d]).join('');
+  return flipped !== label && !flipped.startsWith('0') && labels.has(flipped);
 }
 
 // Returns the n cells in the order the player must find them.
@@ -159,8 +185,9 @@ export function formatTime(ms) {
 
 // Rough attention rating based on seconds per cell; mistakes add a penalty.
 // Chaotic boards are much harder to scan, so their thresholds are doubled.
-export function rating(ms, cells, mistakes, layout = 'grid') {
-  const perCell = (ms / 1000 / cells + mistakes * 0.3 / cells) / (layout === 'chaos' ? 2 : 1);
+export function rating(ms, cells, mistakes, layout = 'grid', expert = false) {
+  const factor = layout === 'chaos' ? (expert ? 2.6 : 2) : 1;
+  const perCell = (ms / 1000 / cells + mistakes * 0.3 / cells) / factor;
   if (perCell <= 0.8) return { stars: 5, text: 'Феноменально!' };
   if (perCell <= 1.2) return { stars: 4, text: 'Отличное внимание' };
   if (perCell <= 1.7) return { stars: 3, text: 'Хороший результат' };

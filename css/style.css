@@ -209,12 +209,14 @@ h3 { font-size: .95rem; margin-bottom: 8px; }
 .zone.f1 path { fill: var(--pink); }
 .zone.f2 path { fill: var(--mint); }
 .zone.f3 path { fill: var(--apricot); }
+.zone .label { pointer-events: none; }
 .zone text {
   fill: var(--ink); font: 600 100px "Oswald", "Arial Narrow", "Roboto Condensed", sans-serif;
   pointer-events: none;
 }
-.zone.red text { fill: var(--ink-red); }
-.zone.found text { opacity: .2; }
+.zone .label rect { fill: var(--ink); }
+.zone.red text, .zone.red .label rect { fill: var(--ink-red); }
+.zone.found .label { opacity: .2; }
 .zone:focus-visible path { stroke: var(--accent); stroke-width: 7; }
 .zone.hit path { animation: zone-hit .3s ease; }
 .zone.miss path { animation: zone-miss .35s ease; }

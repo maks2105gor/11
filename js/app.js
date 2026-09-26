@@ -1,5 +1,5 @@
 import {
-  MODES, LAYOUTS, levels, isValidLevel, levelLabel, createGame, tap, currentTarget, elapsed, shuffle,
+  MODES, LAYOUTS, CHAOS_LEVELS, levels, isValidLevel, levelLabel, isExpert, needsUnderline, createGame, tap, currentTarget, elapsed, shuffle,
   pause, resume, formatTime, rating, addResult, summarize, recordKey, resultKey,
 } from './logic.js';
 import { generateChaos } from './chaos.js';
@@ -140,7 +140,10 @@ function renderMenu() {
 
   $('#level-title').textContent = state.layout === 'grid' ? 'Размер таблицы' : 'Количество клеток';
   $('#size-list').replaceChildren(...levels(state.mode, state.layout).map((level) =>
-    chip(levelLabel(state.layout, level), level === state.level, () => {
+    chip(state.layout === 'grid'
+      ? levelLabel('grid', level)
+      : `<span class="ico">${CHAOS_LEVELS[level].cells}</span>${CHAOS_LEVELS[level].title}`,
+    level === state.level, () => {
       state.level = level;
       save();
       renderMenu();
@@ -172,29 +175,46 @@ function fontReady() {
   return Promise.race([load, new Promise((r) => setTimeout(r, 1500))]);
 }
 
-// Fits a label into its box: stretched tall or wide within limits, like hand-painted signs.
-function labelTransform(box, rot, label) {
+// Fits a label into its box at any angle: stretched tall or wide within limits, like
+// hand-painted signs. Underlined labels reserve room for the bar under the digits.
+const UNDERLINE_GAP = 10;
+const UNDERLINE_SIZE = 11;
+function labelTransform(box, angle, label, underline) {
   measureCtx.font = `600 100px ${LABEL_FONT}`;
   const m = measureCtx.measureText(label);
   const left = m.actualBoundingBoxLeft;
   const right = m.actualBoundingBoxRight;
   const ascent = m.actualBoundingBoxAscent;
-  const descent = m.actualBoundingBoxDescent;
+  const descent = m.actualBoundingBoxDescent + (underline ? UNDERLINE_GAP + UNDERLINE_SIZE : 0);
   const gw = Math.max(1, left + right);
   const gh = Math.max(1, ascent + descent);
   const pad = Math.min(0.16, 10 / Math.min(box.w, box.h) + 0.08);
-  let aw = box.w * (1 - 2 * pad);
-  let ah = box.h * (1 - 2 * pad);
-  if (rot) [aw, ah] = [ah, aw];
-  let sx = aw / gw;
-  let sy = ah / gh;
-  if (sy > sx * 2.4) sy = sx * 2.4;
-  if (sy < sx * 0.8) sx = sy / 0.8;
+  const aw = box.w * (1 - 2 * pad);
+  const ah = box.h * (1 - 2 * pad);
+
+  // Stretch ratio from the orientation the label mostly follows, then one scale that keeps
+  // the rotated bounding box inside the available area.
+  const sideways = Math.abs(Math.sin((angle * Math.PI) / 180)) > 0.7;
+  const [along, across] = sideways ? [ah, aw] : [aw, ah];
+  const k = Math.min(2.4, Math.max(0.8, (across / gh) / (along / gw)));
+  const c = Math.abs(Math.cos((angle * Math.PI) / 180));
+  const sn = Math.abs(Math.sin((angle * Math.PI) / 180));
+  const sx = Math.min(aw / (c * gw + sn * gh * k), ah / (sn * gw + c * gh * k));
+  const sy = sx * k;
+
   const cx = box.x + box.w / 2;
   const cy = box.y + box.h / 2;
   const r = (n) => Math.round(n * 1000) / 1000;
-  return `translate(${r(cx)} ${r(cy)}) rotate(${rot}) scale(${r(sx)} ${r(sy)}) ` +
-    `translate(${r(-(right - left) / 2)} ${r((ascent - descent) / 2)})`;
+  return {
+    transform: `translate(${r(cx)} ${r(cy)}) rotate(${r(angle)}) scale(${r(sx)} ${r(sy)}) ` +
+      `translate(${r(-(right - left) / 2)} ${r((ascent - descent) / 2)})`,
+    underline: underline && { x: -left, y: m.actualBoundingBoxDescent + UNDERLINE_GAP, w: gw },
+  };
+}
+
+// On the expert level found cells are not marked, so the player cannot skip them at a glance.
+function marksFound() {
+  return state.settings.markFound && !isExpert(game.layout, game.level);
 }
 
 function renderGrid() {
@@ -208,7 +228,7 @@ function renderGrid() {
     b.dataset.id = item.id;
     b.textContent = item.label;
     if (item.color === 'red') b.classList.add('red');
-    if (item.id < game.next && state.settings.markFound) b.classList.add('found');
+    if (item.id < game.next && marksFound()) b.classList.add('found');
     b.setAttribute('aria-label', ariaLabel(item));
     grid.append(b);
   }
@@ -222,13 +242,14 @@ function renderChaos() {
   const [, , W, H] = svg.getAttribute('viewBox').split(' ').map(Number);
   wrap.style.setProperty('--ar', W / H);
   const frag = document.createDocumentFragment();
+  const labels = new Set(game.sequence.map((it) => it.label));
   zones.forEach((z, i) => {
     const item = game.board[i];
     // Keep pink and apricot away from red labels on the red-black board.
     const fill = game.mode === 'gorbov' && (z.fill === 1 || z.fill === 3) ? 0 : z.fill;
     const g = document.createElementNS(SVG_NS, 'g');
     g.setAttribute('class', `zone f${fill}${item.color === 'red' ? ' red' : ''}` +
-      `${item.id < game.next && state.settings.markFound ? ' found' : ''}`);
+      `${item.id < game.next && marksFound() ? ' found' : ''}`);
     g.dataset.id = item.id;
     g.setAttribute('role', 'button');
     g.setAttribute('tabindex', '0');
@@ -236,10 +257,22 @@ function renderChaos() {
     const path = document.createElementNS(SVG_NS, 'path');
     path.setAttribute('d', z.d);
     if (z.evenodd) path.setAttribute('fill-rule', 'evenodd');
+    const fit = labelTransform(z.box, z.angle, item.label, needsUnderline(item.label, labels));
+    const label = document.createElementNS(SVG_NS, 'g');
+    label.setAttribute('class', 'label');
+    label.setAttribute('transform', fit.transform);
     const text = document.createElementNS(SVG_NS, 'text');
-    text.setAttribute('transform', labelTransform(z.box, z.rot, item.label));
     text.textContent = item.label;
-    g.append(path, text);
+    label.append(text);
+    if (fit.underline) {
+      const bar = document.createElementNS(SVG_NS, 'rect');
+      bar.setAttribute('x', fit.underline.x);
+      bar.setAttribute('y', fit.underline.y);
+      bar.setAttribute('width', fit.underline.w);
+      bar.setAttribute('height', UNDERLINE_SIZE);
+      label.append(bar);
+    }
+    g.append(path, label);
     frag.append(g);
   });
   svg.replaceChildren(frag);
@@ -277,6 +310,15 @@ async function startGame() {
     const [W, H] = landscape ? [1600, 900] : [900, 1500];
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     zones = generateChaos(game.sequence.length, W, H);
+    const expert = isExpert(game.layout, game.level);
+    for (const z of zones) {
+      z.angle = z.rot;
+      if (expert) {
+        // Tilt every label a little and turn more of them sideways.
+        if (!z.rot && Math.random() < 0.3) z.angle = Math.random() < 0.5 ? 90 : -90;
+        z.angle += (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 22);
+      }
+    }
     await fontReady();
   }
   renderBoard();
@@ -360,7 +402,7 @@ function handleTap(el) {
       game.board = shuffle(game.board);
       renderBoard();
     } else {
-      if (state.settings.markFound) el.classList.add('found');
+      if (marksFound()) el.classList.add('found');
       flash(el, 'hit');
     }
   }
@@ -399,7 +441,7 @@ function finishGame() {
   state.stats = stats;
   save();
 
-  const r = rating(time, cells, game.mistakes, game.layout);
+  const r = rating(time, cells, game.mistakes, game.layout, isExpert(game.layout, game.level));
   $('#result-badge').classList.toggle('on', isRecord && hadRecord);
   $('#result-title').textContent =
     `${MODES[game.mode].title} · ${LAYOUTS[game.layout].title} ${levelLabel(game.layout, game.level)}`;
