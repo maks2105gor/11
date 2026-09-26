@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#efe5c8">
+  <meta name="description" content="Amazing Table — Train Brain: тренажёр внимания и скорости чтения на таблицах Шульте">
+  <title>Amazing Table</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=PT+Sans:wght@400;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main id="app">
+    <!-- Menu: one poster made of tiles, like the board itself -->
+    <section class="screen active" id="screen-menu">
+      <div class="mosaic split">
+        <div class="col">
+        <div class="tiles brand">
+          <div class="tile f3 logo" aria-hidden="true">
+            <svg viewBox="0 0 120 120">
+              <ellipse cx="60" cy="60" rx="52" ry="52" class="logo-ring"/>
+              <line x1="60" y1="8" x2="60" y2="112" class="logo-line"/>
+              <text x="33" y="76" class="logo-num">4</text>
+              <text x="87" y="76" class="logo-num red">2</text>
+            </svg>
+          </div>
+          <div class="tile title-tile">
+            <h1>Amazing Table</h1>
+            <p class="tagline">Train Brain</p>
+          </div>
+        </div>
+
+        <div class="tile strip"><b>Поле</b><span id="layout-hint"></span></div>
+        <div class="choices" id="layout-list" role="radiogroup" aria-label="Поле"></div>
+
+        <div class="tile strip"><b>Режим</b><span id="mode-hint"></span></div>
+        <div class="choices modes grow" id="mode-list" role="radiogroup" aria-label="Режим"></div>
+        </div>
+        <div class="col">
+
+        <div class="tile strip"><b id="level-title">Уровень</b><span id="best-line"></span></div>
+        <div class="choices levels" id="size-list" role="radiogroup" aria-label="Уровень"></div>
+
+        <button class="tile f1 play grow" id="btn-start">Играть <span aria-hidden="true">▶</span></button>
+        <div class="tiles">
+          <button class="tile btn" id="btn-stats">Статистика</button>
+          <button class="tile btn f2" id="btn-settings">Настройки</button>
+          <button class="tile btn" id="btn-help">Как играть</button>
+        </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Game -->
+    <section class="screen" id="screen-game">
+      <div class="mosaic hud-mosaic">
+        <div class="tiles hud">
+          <button class="tile btn quit" id="btn-quit" aria-label="Выйти в меню">✕</button>
+          <div class="tile hud-item target-tile">
+            <span class="hud-label">Найдите</span>
+            <span class="hud-target" id="hud-target">1</span>
+          </div>
+          <div class="tile hud-item">
+            <span class="hud-label">Ошибки</span>
+            <span class="hud-value" id="hud-miss">0</span>
+          </div>
+          <div class="tile hud-item timer-tile">
+            <button class="timer" id="btn-pause" aria-label="Пауза">
+              <span class="timer-icon" id="pause-icon">II</span>
+              <span class="timer-time" id="hud-time">00:00</span>
+            </button>
+          </div>
+        </div>
+        <div class="tile progress"><div class="progress-bar" id="progress-bar"></div></div>
+      </div>
+      <div class="board-wrap" id="board-wrap">
+        <div class="board" id="board"></div>
+        <svg class="chaos" id="chaos" viewBox="0 0 1600 900" hidden aria-label="Игровое поле"></svg>
+        <button class="paused" id="paused" hidden><b>Пауза</b><small>Нажмите, чтобы продолжить</small></button>
+        <div class="focus-dot" id="focus-dot" aria-hidden="true"></div>
+        <div class="countdown" id="countdown" aria-live="assertive"></div>
+      </div>
+      <p class="game-hint" id="game-hint"></p>
+    </section>
+
+    <!-- Result -->
+    <section class="screen" id="screen-result">
+      <div class="mosaic split">
+        <div class="col">
+        <div class="tile strip f1 badge" id="result-badge"><b>Новый рекорд!</b></div>
+        <div class="tile strip"><b id="result-title">Готово!</b></div>
+        <div class="tiles">
+          <div class="tile result-time-tile">
+            <span class="hud-label">Время</span>
+            <p class="result-time" id="result-time">0.00</p>
+          </div>
+          <div class="tile f2 stars-tile">
+            <div class="stars" id="result-stars"></div>
+            <p class="result-sub" id="result-rating"></p>
+          </div>
+        </div>
+        <div class="tiles">
+          <div class="tile stat"><span class="hud-label">Ошибки</span><b id="result-miss">0</b></div>
+          <div class="tile stat"><span class="hud-label">На клетку</span><b id="result-per">0</b></div>
+          <div class="tile stat f3"><span class="hud-label">Рекорд</span><b id="result-best">—</b></div>
+        </div>
+        </div>
+        <div class="col">
+        <button class="tile play f1 grow" id="btn-again">Ещё раз <span aria-hidden="true">↻</span></button>
+        <button class="tile btn" id="btn-menu">В меню</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="screen" id="screen-stats">
+      <div class="mosaic">
+        <div class="tiles topbar">
+          <button class="tile btn back" data-back aria-label="Назад">←</button>
+          <h2 class="tile title-cell">Статистика</h2>
+        </div>
+        <div class="tiles totals" id="totals"></div>
+        <div class="tile strip"><b>Рекорды</b><span>наведите на время — увидите среднее</span></div>
+        <div class="tile records-wrap" id="records"></div>
+        <div class="tile strip"><b>Последние игры</b></div>
+        <div class="tile"><ul class="history" id="history"></ul></div>
+        <button class="tile btn f1" id="btn-reset">Сбросить статистику</button>
+      </div>
+    </section>
+
+    <!-- Settings -->
+    <section class="screen" id="screen-settings">
+      <div class="mosaic">
+        <div class="tiles topbar">
+          <button class="tile btn back" data-back aria-label="Назад">←</button>
+          <h2 class="tile title-cell">Настройки</h2>
+        </div>
+        <label class="tile toggle"><span>Показывать, что искать<small>Подсказка над полем</small></span>
+          <input type="checkbox" id="set-showTarget" data-setting="showTarget"><i></i></label>
+        <label class="tile toggle"><span>Отмечать найденные<small>Найденные числа тускнеют (кроме уровня «Эксперт»)</small></span>
+          <input type="checkbox" id="set-markFound" data-setting="markFound"><i></i></label>
+        <label class="tile toggle"><span>Перемешивать после нажатия<small>Числа меняются местами после каждого верного ответа</small></span>
+          <input type="checkbox" id="set-shuffleOnHit" data-setting="shuffleOnHit"><i></i></label>
+        <label class="tile toggle"><span>Точка фокуса<small>Смотрите в центр, ищите периферийным зрением</small></span>
+          <input type="checkbox" id="set-focusDot" data-setting="focusDot"><i></i></label>
+        <label class="tile toggle"><span>Отсчёт перед стартом<small>3 — 2 — 1</small></span>
+          <input type="checkbox" id="set-countdown" data-setting="countdown"><i></i></label>
+        <label class="tile toggle"><span>Звук</span>
+          <input type="checkbox" id="set-sound" data-setting="sound"><i></i></label>
+        <label class="tile toggle"><span>Вибрация при ошибке</span>
+          <input type="checkbox" id="set-vibrate" data-setting="vibrate"><i></i></label>
+      </div>
+    </section>
+
+    <!-- Help -->
+    <section class="screen" id="screen-help">
+      <div class="mosaic">
+        <div class="tiles topbar">
+          <button class="tile btn back" data-back aria-label="Назад">←</button>
+          <h2 class="tile title-cell">Как играть</h2>
+        </div>
+        <div class="tile prose">
+          <p><b>Таблица Шульте</b> — классический тренажёр внимания, периферийного зрения и скорости чтения.</p>
+          <p>Нажимайте на клетки по порядку как можно быстрее. Таймер запускается сразу после отсчёта (или с первого нажатия, если отсчёт выключен). Нажмите на красный таймер, чтобы поставить игру на паузу.</p>
+        </div>
+        <div class="tile strip f2"><b>Поле</b></div>
+        <div class="tile prose">
+          <ul>
+            <li><b>Хаос</b> — поле нарезано на клетки разных форм: прямоугольники, эллипсы, треугольники, веера и ромбы. Числа разного размера, некоторые вытянуты или повёрнуты. Уровни: Лёгкий 30, Средний 60, Сложный 90 и <b>Эксперт 120</b> — числа наклонены под разными углами, а найденные клетки не тускнеют.</li>
+            <li><b>Сетка</b> — классическая квадратная таблица Шульте от 3×3 до 9×9.</li>
+          </ul>
+        </div>
+        <div class="tile strip f3"><b>Режимы</b></div>
+        <div class="tile prose">
+          <ul>
+            <li><b>Числа</b> — от 1 до последнего.</li>
+            <li><b>Обратный счёт</b> — от последнего к 1.</li>
+            <li><b>Буквы</b> — по алфавиту (без Ё, Й, Ъ, Ь).</li>
+            <li><b>Красно-чёрная</b> (таблица Горбова) — чередуйте: чёрная 1, красная с наибольшим числом, чёрная 2, следующая красная по убыванию и так далее. Тренирует переключение внимания.</li>
+          </ul>
+        </div>
+        <div class="tile strip f1"><b>Советы</b></div>
+        <div class="tile prose">
+          <ul>
+            <li>Держите взгляд в центре поля и старайтесь видеть его целиком.</li>
+            <li>Подчёркнутые числа (6, 9, 18, 81…) помогают не спутать перевёрнутые цифры.</li>
+            <li>Не проговаривайте числа про себя.</li>
+            <li>Занимайтесь по 5–10 минут в день — результат растёт быстро.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

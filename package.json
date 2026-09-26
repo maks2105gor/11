@@ -1,0 +1,11 @@
+{
+  "name": "amazing-table",
+  "version": "1.0.0",
+  "description": "Amazing Table — Train Brain: тренажёр внимания на таблицах Шульте",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "start": "python3 -m http.server 8080"
+  }
+}
