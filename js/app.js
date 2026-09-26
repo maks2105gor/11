@@ -1,6 +1,7 @@
 import {
   MODES, LAYOUTS, CHAOS_LEVELS, levels, isValidLevel, levelLabel, isExpert, needsUnderline, createGame, tap, currentTarget, elapsed, shuffle,
-  pause, resume, formatTime, formatClock, rating, addResult, summarize, recordKey, resultKey,
+  pause, resume, formatTime, formatClock,
+  CHALLENGES, timeLeft, expire, newBoard, score, rating, addResult, summarize, recordKey, resultKey,
 } from './logic.js';
 import { generateChaos } from './chaos.js';
 
@@ -20,6 +21,16 @@ const DEFAULT_SETTINGS = {
 };
 const DEFAULT_BOARD = { mode: 'numbers', layout: 'chaos', level: 30 };
 
+// Russian plural: plural(5, 'число', 'числа', 'чисел') -> 'чисел'.
+function plural(n, one, few, many) {
+  const m10 = n % 10;
+  const m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+  return many;
+}
+const numbersWord = (n) => `${n} ${plural(n, 'число', 'числа', 'чисел')}`;
+
 function load() {
   let data = {};
   try {
@@ -30,6 +41,7 @@ function load() {
     : { ...DEFAULT_BOARD, mode: data.mode || DEFAULT_BOARD.mode }; // saves from before layouts existed
   return {
     ...(isValidLevel(board.mode, board.layout, board.level) ? board : DEFAULT_BOARD),
+    challenge: CHALLENGES[data.challenge] ? data.challenge : 'all',
     settings: { ...DEFAULT_SETTINGS, ...data.settings },
     stats: data.stats || { best: {}, history: [] },
   };
@@ -39,8 +51,8 @@ const state = load();
 
 function save() {
   try {
-    const { mode, layout, level, settings, stats } = state;
-    localStorage.setItem(STORE_KEY, JSON.stringify({ mode, layout, level, settings, stats }));
+    const { mode, layout, level, challenge, settings, stats } = state;
+    localStorage.setItem(STORE_KEY, JSON.stringify({ mode, layout, level, challenge, settings, stats }));
   } catch { /* storage unavailable: play without persistence */ }
 }
 
@@ -141,10 +153,21 @@ function renderMenu() {
       renderMenu();
     })));
 
-  const best = state.stats.best[recordKey(state.mode, state.layout, state.level)];
-  $('#best-line').innerHTML = best
-    ? `Рекорд: <b>${formatTime(best.time)} с</b>`
-    : 'рекорда пока нет';
+  $('#challenge-list').replaceChildren(...Object.entries(CHALLENGES).map(([key, ch]) =>
+    chip(`<span class="ico"><svg class="icon" aria-hidden="true"><use href="#i-${key === 'minute' ? 'clock' : 'flag'}"/></svg></span>${ch.short}`,
+      key === state.challenge, () => {
+        state.challenge = key;
+        save();
+        renderMenu();
+      })));
+  $('#challenge-hint').textContent = CHALLENGES[state.challenge].hint;
+
+  const best = state.stats.best[recordKey(state.mode, state.layout, state.level, state.challenge)];
+  $('#best-line').innerHTML = !best
+    ? 'рекорда пока нет'
+    : state.challenge === 'minute'
+      ? `Рекорд: <b>${numbersWord(best.score)}</b>`
+      : `Рекорд: <b>${formatTime(best.time)} с</b>`;
 }
 
 // ---------- Board rendering ----------
@@ -281,12 +304,23 @@ function renderHud() {
   el.textContent = target ? target.label : '';
   el.classList.toggle('red', target?.color === 'red');
   el.classList.toggle('hidden', !state.settings.showTarget);
-  $('#hud-miss').textContent = game.mistakes;
+  // In the minute challenge the second tile counts collected numbers instead of mistakes.
+  const timed = game.timeLimit !== null;
+  $('#hud-miss-label').textContent = timed ? 'Собрано' : 'Ошибки';
+  $('#hud-miss').textContent = timed ? score(game) : game.mistakes;
   $('#progress-bar').style.width = `${(game.next / game.sequence.length) * 100}%`;
 }
 
 function tickTimer() {
-  $('#hud-time').textContent = formatClock(elapsed(game));
+  if (game.timeLimit === null) {
+    $('#hud-time').textContent = formatClock(elapsed(game));
+    return;
+  }
+  // Minute challenge: the timer counts down; the last ten seconds pulse.
+  const left = timeLeft(game);
+  $('#hud-time').textContent = formatClock(Math.ceil(left / 1000) * 1000);
+  $('#btn-pause').classList.toggle('hurry', game.startedAt !== null && left <= 10000);
+  if (expire(game)) finishGame();
 }
 
 // ---------- Chaotic board geometry ----------
@@ -336,16 +370,21 @@ window.addEventListener('resize', () => {
   }, 250);
 });
 
-// ---------- Game flow ----------
-async function startGame() {
-  stopGame();
-  game = createGame(state.mode, state.layout, state.level);
-  const chaos = game.layout === 'chaos';
-  // Grid cells get poster colours by position; red labels keep to paper and mint.
+// Grid cells get poster colours by position; red labels keep to paper and mint.
+function refillGridColours() {
   game.fills = game.board.map(() => {
     const f = Math.random() < 0.65 ? 0 : 1 + Math.floor(Math.random() * 3);
     return game.mode === 'gorbov' && f !== 2 ? 0 : f;
   });
+}
+
+// ---------- Game flow ----------
+async function startGame() {
+  stopGame();
+  game = createGame(state.mode, state.layout, state.level, Math.random, state.challenge);
+  const chaos = game.layout === 'chaos';
+  // Grid cells get poster colours by position; red labels keep to paper and mint.
+  refillGridColours();
   grid.hidden = chaos;
   svg.toggleAttribute('hidden', !chaos); // SVG elements have no .hidden property
   svg.replaceChildren();
@@ -421,13 +460,24 @@ function flash(el, cls) {
 
 function handleTap(el) {
   if (!el || !game) return;
+  const mistakesBefore = game.mistakes;
   const result = tap(game, Number(el.dataset.id));
   if (result !== 'ignored') ensureTimer();
 
-  if (result === 'miss') {
+  // A wrong tap can also be the one that runs the minute out ('timeup').
+  if (game.mistakes > mistakesBefore) {
     flash(el, 'miss');
     sfx.miss();
+    if (game.timeLimit !== null) flash($('#btn-pause'), 'penalty');
     if (state.settings.vibrate) navigator.vibrate?.(80);
+  } else if (result === 'board') {
+    // Minute challenge: the board is cleared, a fresh one follows right away.
+    sfx.hit();
+    newBoard(game);
+    if (game.layout === 'chaos') buildChaos();
+    else refillGridColours();
+    renderBoard();
+    flash(wrap, 'refill');
   } else if (result === 'hit' || result === 'done') {
     sfx.hit();
     if (state.settings.shuffleOnHit && result === 'hit') {
@@ -439,7 +489,7 @@ function handleTap(el) {
     }
   }
   renderHud();
-  if (result === 'done') finishGame();
+  if (result === 'done' || result === 'timeup') finishGame();
 }
 
 wrap.addEventListener('pointerdown', (e) => {
@@ -462,29 +512,48 @@ function finishGame() {
   stopGame();
   tickTimer();
   sfx.win();
+  const timed = game.timeLimit !== null;
   const time = elapsed(game);
   const cells = game.sequence.length;
   const result = {
-    mode: game.mode, layout: game.layout, level: game.level, time, mistakes: game.mistakes, date: Date.now(),
+    mode: game.mode, layout: game.layout, level: game.level, challenge: game.challenge,
+    time, mistakes: game.mistakes, date: Date.now(),
   };
+  if (timed) result.score = score(game);
   const key = resultKey(result);
   const hadRecord = Boolean(state.stats.best[key]);
   const { stats, isRecord } = addResult(state.stats, result);
   state.stats = stats;
   save();
 
-  const r = rating(time, cells, game.mistakes, game.layout, isExpert(game.layout, game.level));
+  const expert = isExpert(game.layout, game.level);
+  // A minute is rated like a full game: time per collected number.
+  const r = timed
+    ? rating(game.timeLimit, Math.max(1, result.score), 0, game.layout, expert)
+    : rating(time, cells, game.mistakes, game.layout, expert);
+  if (timed && result.score === 0) Object.assign(r, { stars: 1, text: 'Попробуйте ещё раз' });
   $('#result-badge').classList.toggle('on', isRecord && hadRecord);
-  $('#result-title').textContent =
-    `${MODES[game.mode].title} · ${LAYOUTS[game.layout].title} ${levelLabel(game.layout, game.level)}`;
+  $('#result-title').textContent = `${timed ? 'Минута · ' : ''}${MODES[game.mode].title} · ` +
+    `${LAYOUTS[game.layout].title} ${levelLabel(game.layout, game.level)}`;
   $('#result-stars').innerHTML = [1, 2, 3, 4, 5]
     .map((i) => `<svg class="star${i <= r.stars ? ' on' : ''}" aria-hidden="true"><use href="#i-star"/></svg>`).join('');
   $('#result-stars').setAttribute('aria-label', `${r.stars} из 5`);
-  $('#result-time').textContent = `${formatTime(time)} с`;
   $('#result-rating').textContent = r.text;
   $('#result-miss').textContent = game.mistakes;
-  $('#result-per').textContent = `${(time / 1000 / cells).toFixed(2)} с`;
-  $('#result-best').textContent = `${formatTime(stats.best[key].time)} с`;
+  if (timed) {
+    $('#result-main-label').textContent = 'Собрано за минуту';
+    $('#result-time').innerHTML =
+      `${result.score} <small>${plural(result.score, 'число', 'числа', 'чисел')}</small>`;
+    $('#result-per-label').textContent = 'На число';
+    $('#result-per').textContent = result.score ? `${(game.timeLimit / 1000 / result.score).toFixed(2)} с` : '—';
+    $('#result-best').textContent = numbersWord(stats.best[key].score);
+  } else {
+    $('#result-main-label').textContent = 'Время';
+    $('#result-time').textContent = `${formatTime(time)} с`;
+    $('#result-per-label').textContent = 'На клетку';
+    $('#result-per').textContent = `${(time / 1000 / cells).toFixed(2)} с`;
+    $('#result-best').textContent = `${formatTime(stats.best[key].time)} с`;
+  }
 
   setTimeout(() => {
     screenStack = ['menu', 'result'];
@@ -506,22 +575,25 @@ $('#btn-menu').addEventListener('click', toMenu);
 $('#btn-quit').addEventListener('click', toMenu);
 
 // ---------- Stats ----------
-function recordsTable(layout) {
+function recordsTable(layout, challenge = 'all') {
   const cols = [...new Set(Object.keys(MODES).flatMap((m) => levels(m, layout)))].sort((a, b) => a - b);
   const { best, history } = state.stats;
-  let html = `<table class="records"><tr><th>${LAYOUTS[layout].title}</th>` +
+  const minute = challenge === 'minute';
+  const title = `${minute ? 'Минута · ' : ''}${LAYOUTS[layout].title}`;
+  let html = `<table class="records"><tr><th>${title}</th>` +
     `${cols.map((l) => `<th>${levelLabel(layout, l)}</th>`).join('')}</tr>`;
   for (const [mode, info] of Object.entries(MODES)) {
     html += `<tr><td>${info.title}</td>`;
     for (const level of cols) {
-      const key = recordKey(mode, layout, level);
+      const key = recordKey(mode, layout, level, challenge);
       const rec = best[key];
       if (!isValidLevel(mode, layout, level)) html += '<td class="empty">·</td>';
       else if (!rec) html += '<td class="empty">—</td>';
       else {
         const sum = summarize(history, key);
-        const title = sum ? `Игр: ${sum.games}, среднее: ${formatTime(sum.average)} с` : '';
-        html += `<td title="${title}">${formatTime(rec.time)}</td>`;
+        const avg = sum && (minute ? `${sum.average.toFixed(1)} чисел` : `${formatTime(sum.average)} с`);
+        const hint = sum ? `Игр: ${sum.games}, среднее: ${avg}` : '';
+        html += `<td title="${hint}">${minute ? rec.score : formatTime(rec.time)}</td>`;
       }
     }
     html += '</tr>';
@@ -532,7 +604,8 @@ function recordsTable(layout) {
 function historyTitle(r) {
   const mode = MODES[r.mode]?.title ?? r.mode;
   if (!r.layout) return `${mode} ${r.size}×${r.size}`;
-  return `${mode} · ${LAYOUTS[r.layout].title} ${levelLabel(r.layout, r.level)}`;
+  const prefix = r.challenge === 'minute' ? 'Минута · ' : '';
+  return `${prefix}${mode} · ${LAYOUTS[r.layout].title} ${levelLabel(r.layout, r.level)}`;
 }
 
 function renderStats() {
@@ -543,7 +616,8 @@ function renderStats() {
     <div class="tile"><b>${Object.keys(best).length}</b><span>Рекордов</span></div>
     <div class="tile"><b>${Math.round(totalTime / 60000)}</b><span>Минут</span></div>`;
 
-  $('#records').innerHTML = recordsTable('chaos') + recordsTable('grid');
+  $('#records').innerHTML = recordsTable('chaos') + recordsTable('grid') +
+    recordsTable('chaos', 'minute') + recordsTable('grid', 'minute');
 
   const list = $('#history');
   if (!history.length) {
@@ -555,7 +629,7 @@ function renderStats() {
     <li>
       <span>${historyTitle(r)}
         <span class="meta">· ${fmtDate.format(r.date)}${r.mistakes ? ` · ошибок: ${r.mistakes}` : ''}</span></span>
-      <span class="t">${formatTime(r.time)} с</span>
+      <span class="t">${r.challenge === 'minute' ? numbersWord(r.score) : `${formatTime(r.time)} с`}</span>
     </li>`).join('');
 }
 

@@ -112,13 +112,29 @@ export function buildSequence(mode, n) {
   return seq.map((cell, id) => ({ id, ...cell }));
 }
 
-export function createGame(mode, layout, level, random = Math.random) {
+// What the player is racing for: clear the whole board as fast as possible,
+// or collect as many numbers as possible in one minute.
+export const CHALLENGES = {
+  all: { title: 'Все числа', short: 'На скорость', hint: 'Найдите все числа как можно быстрее' },
+  minute: {
+    title: 'Минута', short: 'Минута',
+    hint: 'За 60 секунд соберите как можно больше чисел. Ошибка отнимает 2 секунды',
+  },
+};
+export const MINUTE_MS = 60000;
+export const MISS_PENALTY_MS = 2000;
+
+export function createGame(mode, layout, level, random = Math.random, challenge = 'all') {
   if (!isValidLevel(mode, layout, level)) throw new Error(`Unsupported board: ${mode} ${layout} ${level}`);
+  if (!CHALLENGES[challenge]) throw new Error(`Unknown challenge: ${challenge}`);
   const sequence = buildSequence(mode, cellCount(layout, level));
   return {
     mode,
     layout,
     level,
+    challenge,
+    timeLimit: challenge === 'minute' ? MINUTE_MS : null,
+    cleared: 0, // boards completed in the minute challenge
     sequence,
     board: shuffle(sequence, random), // board[i] is the item shown in cell i
     next: 0,
@@ -144,20 +160,53 @@ export function resume(game, now = Date.now()) {
 }
 
 // Applies a tap on the cell with the given id. Returns 'hit', 'miss', 'done' or 'ignored'.
+// Applies a tap on the cell with the given id.
+// Returns 'hit', 'miss', 'done' (board finished), 'board' (board cleared in the minute
+// challenge, a new one should follow), 'timeup' or 'ignored'.
 export function tap(game, cellId, now = Date.now()) {
   if (game.finishedAt !== null || game.pausedAt !== null) return 'ignored';
   if (game.startedAt === null) game.startedAt = now;
+  if (expire(game, now)) return 'timeup';
   if (cellId < game.next) return 'ignored'; // already found
   if (cellId !== game.next) {
     game.mistakes++;
-    return 'miss';
+    return expire(game, now) ? 'timeup' : 'miss';
   }
   game.next++;
   if (game.next === game.sequence.length) {
+    if (game.timeLimit !== null) {
+      game.cleared++;
+      return 'board';
+    }
     game.finishedAt = now;
     return 'done';
   }
   return 'hit';
+}
+
+// Minute challenge: time left after the elapsed time and the penalties for mistakes.
+export function timeLeft(game, now = Date.now()) {
+  if (game.timeLimit === null) return null;
+  return Math.max(0, game.timeLimit - elapsed(game, now) - game.mistakes * MISS_PENALTY_MS);
+}
+
+// Ends a timed game whose clock has run out. Returns true if it did.
+export function expire(game, now = Date.now()) {
+  if (game.timeLimit === null || game.startedAt === null || game.finishedAt !== null) return false;
+  if (game.pausedAt !== null || timeLeft(game, now) > 0) return false;
+  game.finishedAt = now;
+  return true;
+}
+
+// Minute challenge: the next board with the same numbers in new places.
+export function newBoard(game, random = Math.random) {
+  game.board = shuffle(game.sequence, random);
+  game.next = 0;
+}
+
+// A cleared board is counted in `cleared` right away, even before newBoard() resets `next`.
+export function score(game) {
+  return game.cleared * game.sequence.length + (game.next % game.sequence.length);
 }
 
 export function currentTarget(game) {
@@ -171,8 +220,9 @@ export function elapsed(game, now = Date.now()) {
 }
 
 // Grid keys keep the original "mode-size" format so older records stay valid.
-export function recordKey(mode, layout, level) {
-  return layout === 'grid' ? `${mode}-${level}` : `${mode}-x${level}`;
+export function recordKey(mode, layout, level, challenge = 'all') {
+  const key = layout === 'grid' ? `${mode}-${level}` : `${mode}-x${level}`;
+  return challenge === 'minute' ? `${key}@min` : key;
 }
 
 export function formatTime(ms) {
@@ -202,28 +252,37 @@ export function rating(ms, cells, mistakes, layout = 'grid', expert = false) {
 }
 
 // Pure record/history update. Returns { stats, isRecord }.
+// Minute results are compared by score (more is better), the rest by time (less is better).
 export function addResult(stats, result, historyLimit = 100) {
   const key = resultKey(result);
   const prev = stats.best?.[key];
-  const isRecord = prev === undefined || result.time < prev.time;
+  const minute = result.challenge === 'minute';
+  const isRecord = prev === undefined || (minute ? result.score > prev.score : result.time < prev.time);
   const best = { ...(stats.best || {}) };
-  if (isRecord) best[key] = { time: result.time, mistakes: result.mistakes, date: result.date };
+  if (isRecord) {
+    best[key] = { time: result.time, mistakes: result.mistakes, date: result.date };
+    if (minute) best[key].score = result.score;
+  }
   const history = [result, ...(stats.history || [])].slice(0, historyLimit);
   return { stats: { best, history }, isRecord };
 }
 
 // Results saved before layouts existed have only mode and size.
 export function resultKey(r) {
-  return r.layout ? recordKey(r.mode, r.layout, r.level) : recordKey(r.mode, 'grid', r.size);
+  return r.layout
+    ? recordKey(r.mode, r.layout, r.level, r.challenge)
+    : recordKey(r.mode, 'grid', r.size);
 }
 
+// Average and last value: the score for minute results, the time for the rest.
 export function summarize(history, key) {
   const games = history.filter((r) => resultKey(r) === key);
   if (!games.length) return null;
-  const total = games.reduce((s, r) => s + r.time, 0);
+  const value = (r) => (r.challenge === 'minute' ? r.score : r.time);
+  const total = games.reduce((s, r) => s + value(r), 0);
   return {
     games: games.length,
     average: total / games.length,
-    last: games[0].time,
+    last: value(games[0]),
   };
 }

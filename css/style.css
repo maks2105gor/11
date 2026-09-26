@@ -159,6 +159,14 @@ button.tile:focus-visible, .chip:focus-visible, .timer:focus-visible, .paused:fo
 }
 .timer-icon { width: 1.1rem; height: 1.1rem; stroke: none; fill: currentColor; }
 .timer-time { flex: 1; text-align: center; }
+/* Minute challenge: a wrong tap costs two seconds, the last ten seconds pulse. */
+.timer.penalty { animation: penalty .45s ease; }
+.timer.hurry { animation: hurry 1s ease-in-out infinite; }
+.timer.hurry.penalty { animation: penalty .45s ease; }
+@keyframes penalty { 20% { transform: translateX(-5px); background: var(--ink-red); } 60% { transform: translateX(5px); } }
+@keyframes hurry { 50% { transform: scale(1.06); background: var(--ink-red); } }
+.board-wrap.refill .chaos, .board-wrap.refill .board { animation: refill .35s ease; }
+@keyframes refill { from { opacity: .2; transform: scale(.98); } }
 
 .progress { padding: 0; height: 10px; }
 .progress-bar { height: 100%; width: 0; background: var(--mint); transition: width .15s ease; }
@@ -277,6 +285,7 @@ button.tile:focus-visible, .chip:focus-visible, .timer:focus-visible, .paused:fo
 .result-time {
   margin: 0; font: 700 clamp(2.6rem, 13vw, 4.4rem)/1 var(--display); font-variant-numeric: tabular-nums;
 }
+.result-time small { font-size: .38em; font-weight: 500; letter-spacing: .02em; }
 .stars-tile { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
 .stars { display: flex; justify-content: center; gap: 1px; }
 .star {

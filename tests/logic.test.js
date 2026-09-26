@@ -4,6 +4,7 @@ import {
   MODES, LAYOUTS, levels, cellCount, buildSequence, createGame, tap, currentTarget, elapsed,
   formatTime, addResult, summarize, shuffle, isValidLevel, rating, pause, resume, recordKey, resultKey,
   isExpert, levelLabel, needsUnderline, formatClock,
+  timeLeft, expire, newBoard, score, MINUTE_MS, MISS_PENALTY_MS,
 } from '../js/logic.js';
 
 test('every mode builds a full sequence for every level of every layout', () => {
@@ -151,4 +152,57 @@ test('numbers that read as another number upside down are underlined', () => {
   // 6 has no partner when the board stops at 6.
   assert.equal(needsUnderline('6', new Set(['1', '2', '3', '4', '5', '6'])), false);
   assert.equal(needsUnderline('А', labels), false);
+});
+
+test('minute challenge: boards refill, score adds up, time runs out', () => {
+  const g = createGame('numbers', 'grid', 3, Math.random, 'minute');
+  assert.equal(g.timeLimit, MINUTE_MS);
+  for (let i = 0; i < 8; i++) assert.equal(tap(g, i, 1000 + i), 'hit');
+  assert.equal(tap(g, 8, 2000), 'board');
+  assert.equal(g.finishedAt, null);
+  assert.equal(score(g), 9);
+  newBoard(g);
+  assert.equal(g.next, 0);
+  assert.equal(tap(g, 0, 3000), 'hit');
+  assert.equal(score(g), 10);
+  assert.equal(timeLeft(g, 3000), MINUTE_MS - 2000);
+  assert.equal(tap(g, 5, 4000), 'miss');
+  assert.equal(timeLeft(g, 4000), MINUTE_MS - 3000 - MISS_PENALTY_MS);
+  assert.equal(expire(g, 30000), false);
+  assert.equal(tap(g, 1, 70000), 'timeup');
+  assert.notEqual(g.finishedAt, null);
+  assert.equal(score(g), 10);
+  assert.equal(timeLeft(g, 99999), 0);
+});
+
+test('minute challenge: a mistake can end the game', () => {
+  const g = createGame('numbers', 'chaos', 30, Math.random, 'minute');
+  tap(g, 0, 0);
+  assert.equal(tap(g, 7, 59000), 'timeup'); // 59 s + 2 s penalty
+});
+
+test('pause freezes the minute clock', () => {
+  const g = createGame('numbers', 'chaos', 30, Math.random, 'minute');
+  tap(g, 0, 0);
+  pause(g, 10000);
+  assert.equal(expire(g, 120000), false);
+  resume(g, 120000);
+  assert.equal(timeLeft(g, 120000), 50000);
+});
+
+test('minute records are kept apart and compared by score', () => {
+  assert.equal(recordKey('numbers', 'chaos', 30, 'minute'), 'numbers-x30@min');
+  let stats = {};
+  const r = { mode: 'numbers', layout: 'chaos', level: 30, challenge: 'minute', time: 60000, mistakes: 0, date: 1 };
+  stats = addResult(stats, { ...r, score: 40 }).stats;
+  let res = addResult(stats, { ...r, score: 35 });
+  assert.equal(res.isRecord, false);
+  res = addResult(res.stats, { ...r, score: 52 });
+  assert.equal(res.isRecord, true);
+  assert.equal(res.stats.best['numbers-x30@min'].score, 52);
+  assert.equal(res.stats.best['numbers-x30'], undefined);
+  const sum = summarize(res.stats.history, 'numbers-x30@min');
+  assert.equal(sum.games, 3);
+  assert.equal(sum.last, 52);
+  assert.ok(Math.abs(sum.average - (40 + 35 + 52) / 3) < 1e-9);
 });
