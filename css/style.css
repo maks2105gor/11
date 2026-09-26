@@ -40,6 +40,7 @@ body {
   transition: max-width .2s;
 }
 body.wide #app { max-width: 1500px; }
+body.in-game #app { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
 
 .screen { display: none; flex-direction: column; gap: 12px; animation: fade .2s ease; }
 .screen.active { display: flex; }
@@ -53,6 +54,7 @@ h1, h2, h3 { margin: 0; line-height: 1.1; font-family: var(--display); font-weig
   background: var(--ink); border: var(--line) solid var(--ink); border-radius: var(--radius);
   overflow: hidden;
 }
+.col { display: flex; flex-direction: column; gap: var(--line); background: var(--ink); min-width: 0; }
 .tiles, .choices { display: flex; gap: var(--line); background: var(--ink); }
 .choices { flex-wrap: wrap; }
 .tile {
@@ -154,7 +156,8 @@ button.tile:focus-visible, .chip:focus-visible, .timer:focus-visible, .paused:fo
 /* ---------- Board ---------- */
 .board-wrap {
   --ar: 1;
-  --chrome: 190px; /* HUD, hint and paddings */
+  --chrome: 150px; /* HUD, hint and paddings: the rest of the height goes to the board */
+  --side: 0px; /* width taken by the HUD column on landscape phones */
   position: relative;
   aspect-ratio: var(--ar);
   width: min(100%, calc((100vh - var(--chrome)) * var(--ar)));
@@ -324,17 +327,48 @@ button.tile:focus-visible, .chip:focus-visible, .timer:focus-visible, .paused:fo
 .prose li { margin-bottom: 6px; }
 .prose li:last-child { margin-bottom: 0; }
 
-/* Phones in landscape: a compact HUD leaves the height to the board. */
-@media (max-height: 520px) and (orientation: landscape) {
-  #app { padding-block: 8px; }
-  #screen-game { gap: 6px; }
-  .hud-item { padding: 2px 8px; flex-direction: row; align-items: baseline; gap: 6px; }
-  .hud-value, .hud-target { font-size: 1.1rem; }
-  .timer { padding: 2px 12px; font-size: 1.1rem; }
-  .hud > .quit { flex-basis: 44px; }
-  .progress { height: 6px; }
+/* ---------- Landscape phones ----------
+   The HUD becomes a column on the left so the board gets the full height,
+   and the menu and results lay out their tiles in two columns. */
+@media (orientation: landscape) and (max-height: 560px) {
+  #app { max-width: 980px; padding: max(8px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  body.wide #app, body.in-game #app { max-width: none; }
+  .screen { gap: 8px; }
+
+  .mosaic.split { flex-direction: row; }
+  .mosaic.split > .col { flex: 1; }
+  .col > .grow { flex-grow: 1; }
+  .choices.grow { align-content: stretch; }
+  .brand { min-height: 0; }
+  .logo { flex-basis: 84px; padding: 6px; }
+  .logo svg { width: 66px; height: 66px; }
+  .title-tile { padding: 8px 14px; }
+  .title-tile h1 { font-size: 1.9rem; }
+  .tagline { margin-top: 4px; font-size: .75rem; }
+  .strip { padding: 4px 12px; font-size: .8rem; }
+  .chip { padding: 7px 6px; font-size: .88rem; }
+  .chip .ico { font-size: 1.15rem; margin-bottom: 1px; }
+  .levels .chip { --basis: 40%; }
+  .modes .chip { --basis: 40%; }
+  .play { padding: 12px; font-size: 1.5rem !important; }
+  .tiles > .btn { padding: 10px 4px; font-size: .85rem; }
+  .result-time { font-size: 3rem; }
+
+  #screen-game {
+    display: none; grid-template-columns: 118px minmax(0, 1fr); gap: 10px; align-items: start;
+  }
+  #screen-game.active { display: grid; }
+  .hud-mosaic { grid-row: 1; }
+  .hud { flex-direction: column; }
+  .hud > .quit { flex: 0 0 44px; }
+  .hud-item { padding: 6px 6px; }
+  .hud-value, .hud-target { font-size: 1.5rem; }
+  .timer-tile { padding: 8px 6px; }
+  .timer { flex-direction: column; gap: 2px; padding: 6px 4px; border-radius: 22px; font-size: 1.25rem; }
+  .timer-icon { font-size: .8rem; }
+  .progress { height: 8px; }
+  .board-wrap { --chrome: 20px; --side: 128px; grid-column: 2; }
   .game-hint { display: none; }
-  .board-wrap { --chrome: 76px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

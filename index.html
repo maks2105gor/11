@@ -18,7 +18,8 @@
   <main id="app">
     <!-- Menu: one poster made of tiles, like the board itself -->
     <section class="screen active" id="screen-menu">
-      <div class="mosaic">
+      <div class="mosaic split">
+        <div class="col">
         <div class="tiles brand">
           <div class="tile f3 logo" aria-hidden="true">
             <svg viewBox="0 0 120 120">
@@ -38,16 +39,19 @@
         <div class="choices" id="layout-list" role="radiogroup" aria-label="Поле"></div>
 
         <div class="tile strip"><b>Режим</b><span id="mode-hint"></span></div>
-        <div class="choices modes" id="mode-list" role="radiogroup" aria-label="Режим"></div>
+        <div class="choices modes grow" id="mode-list" role="radiogroup" aria-label="Режим"></div>
+        </div>
+        <div class="col">
 
         <div class="tile strip"><b id="level-title">Уровень</b><span id="best-line"></span></div>
         <div class="choices levels" id="size-list" role="radiogroup" aria-label="Уровень"></div>
 
-        <button class="tile f1 play" id="btn-start">Играть <span aria-hidden="true">▶</span></button>
+        <button class="tile f1 play grow" id="btn-start">Играть <span aria-hidden="true">▶</span></button>
         <div class="tiles">
           <button class="tile btn" id="btn-stats">Статистика</button>
           <button class="tile btn f2" id="btn-settings">Настройки</button>
           <button class="tile btn" id="btn-help">Как играть</button>
+        </div>
         </div>
       </div>
     </section>
@@ -86,7 +90,8 @@
 
     <!-- Result -->
     <section class="screen" id="screen-result">
-      <div class="mosaic">
+      <div class="mosaic split">
+        <div class="col">
         <div class="tile strip f1 badge" id="result-badge"><b>Новый рекорд!</b></div>
         <div class="tile strip"><b id="result-title">Готово!</b></div>
         <div class="tiles">
@@ -104,8 +109,11 @@
           <div class="tile stat"><span class="hud-label">На клетку</span><b id="result-per">0</b></div>
           <div class="tile stat f3"><span class="hud-label">Рекорд</span><b id="result-best">—</b></div>
         </div>
-        <button class="tile play f1" id="btn-again">Ещё раз <span aria-hidden="true">↻</span></button>
+        </div>
+        <div class="col">
+        <button class="tile play f1 grow" id="btn-again">Ещё раз <span aria-hidden="true">↻</span></button>
         <button class="tile btn" id="btn-menu">В меню</button>
+        </div>
       </div>
     </section>
 

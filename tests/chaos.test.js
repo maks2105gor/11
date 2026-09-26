@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { generateChaos, mulberry32, MIN_LABEL } from '../js/chaos.js';
 
-const FIELDS = [[1600, 900], [900, 1500]];
+// Typical boards plus the extreme shapes the app allows (aspect 2.2 and 0.5).
+const FIELDS = [[1600, 900], [900, 1500], [1780, 809], [849, 1697]];
 const COUNTS = [25, 30, 60, 90, 120];
 
 test('boards have exactly n cells with sane label boxes', () => {

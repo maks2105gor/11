@@ -73,6 +73,7 @@ let screenStack = ['menu'];
 function show(name, push = true) {
   $$('.screen').forEach((s) => s.classList.toggle('active', s.id === `screen-${name}`));
   document.body.classList.toggle('wide', name === 'game' && game?.layout === 'chaos');
+  document.body.classList.toggle('in-game', name === 'game');
   if (push) screenStack.push(name);
   window.scrollTo(0, 0);
 }
@@ -288,6 +289,53 @@ function tickTimer() {
   $('#hud-time').textContent = formatClock(elapsed(game));
 }
 
+// ---------- Chaotic board geometry ----------
+// Every board has the same area in board units, so cells keep their size while the
+// field takes the shape of the free space: wide on a landscape phone, tall upright.
+const FIELD_AREA = 1600 * 900;
+
+function fieldSize() {
+  const cs = getComputedStyle(wrap);
+  const chrome = parseFloat(cs.getPropertyValue('--chrome')) || 0;
+  const side = parseFloat(cs.getPropertyValue('--side')) || 0;
+  const w = Math.max(200, $('#screen-game').clientWidth - side);
+  const h = Math.max(150, window.innerHeight - chrome);
+  const ar = Math.min(2.2, Math.max(0.5, w / h));
+  const W = Math.round(Math.sqrt(FIELD_AREA * ar));
+  return [W, Math.round(FIELD_AREA / W)];
+}
+
+function buildChaos() {
+  const [W, H] = fieldSize();
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  zones = generateChaos(game.sequence.length, W, H);
+  const expert = isExpert(game.layout, game.level);
+  for (const z of zones) {
+    z.angle = z.rot;
+    if (expert) {
+      // Tilt every label a little and turn more of them sideways.
+      if (!z.rot && Math.random() < 0.3) z.angle = Math.random() < 0.5 ? 90 : -90;
+      z.angle += (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 22);
+    }
+  }
+}
+
+// When the phone is turned, the board is rebuilt for the new shape. Progress, time and
+// mistakes stay; found numbers stay marked.
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (!game || game.layout !== 'chaos' || game.finishedAt !== null) return;
+    if (!$('#screen-game').classList.contains('active')) return;
+    const [W, H] = fieldSize();
+    const [, , cw, ch] = svg.getAttribute('viewBox').split(' ').map(Number);
+    if (Math.abs(Math.log((W / H) / (cw / ch))) < 0.15) return;
+    buildChaos();
+    renderBoard();
+  }, 250);
+});
+
 // ---------- Game flow ----------
 async function startGame() {
   stopGame();
@@ -300,21 +348,10 @@ async function startGame() {
   });
   grid.hidden = chaos;
   svg.toggleAttribute('hidden', !chaos); // SVG elements have no .hidden property
+  svg.replaceChildren();
+  show('game'); // the board is sized from the visible screen
   if (chaos) {
-    // Landscape field on wide screens, portrait field on phones held upright.
-    const landscape = window.innerWidth >= window.innerHeight * 0.9;
-    const [W, H] = landscape ? [1600, 900] : [900, 1500];
-    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    zones = generateChaos(game.sequence.length, W, H);
-    const expert = isExpert(game.layout, game.level);
-    for (const z of zones) {
-      z.angle = z.rot;
-      if (expert) {
-        // Tilt every label a little and turn more of them sideways.
-        if (!z.rot && Math.random() < 0.3) z.angle = Math.random() < 0.5 ? 90 : -90;
-        z.angle += (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 22);
-      }
-    }
+    buildChaos();
     await fontReady();
   }
   renderBoard();
@@ -323,7 +360,6 @@ async function startGame() {
   $('#hud-time').textContent = formatClock(0);
   $('#focus-dot').classList.toggle('on', state.settings.focusDot);
   $('#game-hint').textContent = MODES[state.mode].hint.replace('N', game.sequence.length);
-  show('game');
 
   if (state.settings.countdown) {
     wrap.classList.add('locked');
