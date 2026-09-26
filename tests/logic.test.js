@@ -1,47 +1,54 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  MODES, buildSequence, createGame, tap, currentTarget, elapsed,
-  formatTime, addResult, summarize, shuffle, isValidSize, rating,
+  MODES, LAYOUTS, levels, cellCount, buildSequence, createGame, tap, currentTarget, elapsed,
+  formatTime, addResult, summarize, shuffle, isValidLevel, rating, pause, resume, recordKey, resultKey,
 } from '../js/logic.js';
 
-test('every mode builds a full sequence for every supported size', () => {
-  for (const [mode, { sizes }] of Object.entries(MODES)) {
-    for (const size of sizes) {
-      const seq = buildSequence(mode, size);
-      assert.equal(seq.length, size * size, `${mode} ${size}`);
-      assert.deepEqual(seq.map((c) => c.id), [...seq.keys()]);
+test('every mode builds a full sequence for every level of every layout', () => {
+  for (const mode of Object.keys(MODES)) {
+    for (const layout of Object.keys(LAYOUTS)) {
+      for (const level of levels(mode, layout)) {
+        const game = createGame(mode, layout, level);
+        assert.equal(game.sequence.length, cellCount(layout, level), `${mode} ${layout} ${level}`);
+        assert.equal(game.board.length, game.sequence.length);
+        assert.deepEqual(game.sequence.map((c) => c.id), [...game.sequence.keys()]);
+      }
     }
   }
 });
 
 test('numbers and reverse order', () => {
-  assert.deepEqual(buildSequence('numbers', 3).map((c) => c.label), ['1', '2', '3', '4', '5', '6', '7', '8', '9']);
-  assert.deepEqual(buildSequence('reverse', 3).map((c) => c.label), ['9', '8', '7', '6', '5', '4', '3', '2', '1']);
+  assert.deepEqual(buildSequence('numbers', 9).map((c) => c.label), ['1', '2', '3', '4', '5', '6', '7', '8', '9']);
+  assert.deepEqual(buildSequence('reverse', 9).map((c) => c.label), ['9', '8', '7', '6', '5', '4', '3', '2', '1']);
+  assert.equal(buildSequence('numbers', 90).at(-1).label, '90');
 });
 
 test('letters are unique and alphabetical', () => {
-  const labels = buildSequence('letters', 5).map((c) => c.label);
+  const labels = buildSequence('letters', 25).map((c) => c.label);
   assert.equal(new Set(labels).size, 25);
   assert.equal(labels[0], 'А');
+  assert.throws(() => buildSequence('letters', 40));
 });
 
 test('gorbov alternates black ascending with red descending', () => {
-  const seq = buildSequence('gorbov', 3);
+  const seq = buildSequence('gorbov', 9);
   assert.deepEqual(
     seq.map((c) => `${c.color[0]}${c.label}`),
     ['b1', 'r4', 'b2', 'r3', 'b3', 'r2', 'b4', 'r1', 'b5'],
   );
-  const big = buildSequence('gorbov', 7);
+  const big = buildSequence('gorbov', 49);
   assert.equal(big.filter((c) => c.color === 'black').length, 25);
   assert.equal(big.filter((c) => c.color === 'red').length, 24);
   assert.equal(new Set(big.map((c) => c.color + c.label)).size, 49);
+  assert.equal(new Set(buildSequence('gorbov', 90).map((c) => c.color + c.label)).size, 90);
 });
 
-test('rejects unsupported sizes', () => {
-  assert.equal(isValidSize('letters', 7), false);
-  assert.throws(() => buildSequence('letters', 7));
-  assert.throws(() => buildSequence('nope', 3));
+test('rejects unsupported boards', () => {
+  assert.equal(isValidLevel('letters', 'grid', 7), false);
+  assert.equal(isValidLevel('numbers', 'chaos', 90), true);
+  assert.throws(() => createGame('letters', 'grid', 7));
+  assert.throws(() => createGame('nope', 'grid', 3));
 });
 
 test('shuffle keeps all elements', () => {
@@ -50,7 +57,7 @@ test('shuffle keeps all elements', () => {
 });
 
 test('tap flow: hits, misses, finish', () => {
-  const g = createGame('numbers', 3);
+  const g = createGame('numbers', 'grid', 3);
   assert.equal(tap(g, 5, 1000), 'miss');
   assert.equal(g.mistakes, 1);
   assert.equal(g.startedAt, 1000);
@@ -63,20 +70,39 @@ test('tap flow: hits, misses, finish', () => {
   assert.equal(currentTarget(g), null);
 });
 
+test('pause stops the clock and blocks taps', () => {
+  const g = createGame('numbers', 'chaos', 30);
+  assert.equal(pause(g, 0), false); // not started yet
+  tap(g, 0, 1000);
+  assert.equal(pause(g, 3000), true);
+  assert.equal(elapsed(g, 10000), 2000);
+  assert.equal(tap(g, 1, 5000), 'ignored');
+  assert.equal(resume(g, 8000), true);
+  assert.equal(elapsed(g, 9000), 3000);
+  assert.equal(tap(g, 1, 9000), 'hit');
+});
+
 test('formatTime', () => {
   assert.equal(formatTime(12345), '12.35');
   assert.equal(formatTime(75500), '1:15.50');
   assert.equal(formatTime(61000), '1:01.00');
 });
 
-test('rating gets better with speed', () => {
+test('rating gets better with speed and is gentler on chaotic boards', () => {
   assert.equal(rating(15000, 25, 0).stars, 5);
   assert.equal(rating(100000, 25, 0).stars, 1);
+  assert.ok(rating(90000, 60, 0, 'chaos').stars > rating(90000, 60, 0, 'grid').stars);
+});
+
+test('record keys keep the old grid format', () => {
+  assert.equal(recordKey('numbers', 'grid', 5), 'numbers-5');
+  assert.equal(recordKey('numbers', 'chaos', 90), 'numbers-x90');
+  assert.equal(resultKey({ mode: 'numbers', size: 5 }), 'numbers-5');
 });
 
 test('addResult tracks records and history', () => {
   let stats = {};
-  const r1 = { mode: 'numbers', size: 5, time: 30000, mistakes: 1, date: 1 };
+  const r1 = { mode: 'numbers', layout: 'chaos', level: 60, time: 30000, mistakes: 1, date: 1 };
   let res = addResult(stats, r1);
   assert.equal(res.isRecord, true);
   stats = res.stats;
@@ -85,11 +111,11 @@ test('addResult tracks records and history', () => {
   stats = res.stats;
   res = addResult(stats, { ...r1, time: 20000, date: 3 });
   assert.equal(res.isRecord, true);
-  assert.equal(res.stats.best['numbers-5'].time, 20000);
+  assert.equal(res.stats.best['numbers-x60'].time, 20000);
   assert.equal(res.stats.history.length, 3);
-  const sum = summarize(res.stats.history, 'numbers', 5);
+  const sum = summarize(res.stats.history, 'numbers-x60');
   assert.equal(sum.games, 3);
   assert.equal(sum.average, 30000);
   assert.equal(sum.last, 20000);
-  assert.equal(summarize(res.stats.history, 'letters', 3), null);
+  assert.equal(summarize(res.stats.history, 'letters-3'), null);
 });

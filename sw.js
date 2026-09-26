@@ -1,12 +1,13 @@
 // Offline support: precache the static game, prefer the network so updates arrive,
 // and fall back to the cache when offline.
-const CACHE = 'amazing-table-v1';
+const CACHE = 'amazing-table-v2';
 const ASSETS = [
   './',
   'index.html',
   'css/style.css',
   'js/app.js',
   'js/logic.js',
+  'js/chaos.js',
   'icon.svg',
   'manifest.webmanifest',
 ];

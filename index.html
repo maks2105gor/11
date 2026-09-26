@@ -9,6 +9,9 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@600&display=swap">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -24,13 +27,19 @@
       </header>
 
       <div class="card">
+        <h2>Поле</h2>
+        <div class="modes" id="layout-list" role="radiogroup" aria-label="Поле"></div>
+        <p class="mode-hint" id="layout-hint"></p>
+      </div>
+
+      <div class="card">
         <h2>Режим</h2>
         <div class="modes" id="mode-list" role="radiogroup" aria-label="Режим"></div>
         <p class="mode-hint" id="mode-hint"></p>
       </div>
 
       <div class="card">
-        <h2>Размер таблицы</h2>
+        <h2 id="level-title">Размер таблицы</h2>
         <div class="sizes" id="size-list" role="radiogroup" aria-label="Размер"></div>
         <p class="best-line" id="best-line"></p>
       </div>
@@ -47,6 +56,7 @@
     <section class="screen" id="screen-game">
       <div class="hud">
         <button class="icon-btn" id="btn-quit" aria-label="Выйти в меню">✕</button>
+        <button class="icon-btn" id="btn-pause" aria-label="Пауза">II</button>
         <div class="hud-item">
           <span class="hud-label">Найдите</span>
           <span class="hud-target" id="hud-target">1</span>
@@ -61,8 +71,10 @@
         </div>
       </div>
       <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
-      <div class="board-wrap">
+      <div class="board-wrap" id="board-wrap">
         <div class="board" id="board"></div>
+        <svg class="chaos" id="chaos" viewBox="0 0 1600 900" hidden aria-label="Игровое поле"></svg>
+        <button class="paused" id="paused" hidden>Пауза<small>Нажмите, чтобы продолжить</small></button>
         <div class="focus-dot" id="focus-dot" aria-hidden="true"></div>
         <div class="countdown" id="countdown" aria-live="assertive"></div>
       </div>
@@ -98,7 +110,7 @@
       </div>
       <div class="card">
         <h3>Рекорды</h3>
-        <div class="table-scroll"><table class="records" id="records"></table></div>
+        <div class="records-wrap" id="records"></div>
       </div>
       <div class="card">
         <h3>Последние игры</h3>
@@ -147,7 +159,12 @@
       </div>
       <div class="card prose">
         <p><b>Таблица Шульте</b> — классический тренажёр внимания, периферийного зрения и скорости чтения.</p>
-        <p>Нажимайте на ячейки по порядку как можно быстрее. Таймер запускается с первого нажатия.</p>
+        <p>Нажимайте на ячейки по порядку как можно быстрее. Таймер запускается сразу после отсчёта (или с первого нажатия, если отсчёт выключен). Кнопка II ставит игру на паузу.</p>
+        <h3>Поле</h3>
+        <ul>
+          <li><b>Хаос</b> — поле нарезано на клетки разных форм: прямоугольники, эллипсы, треугольники, веера и ромбы. Числа разного размера, некоторые вытянуты или повёрнуты. Найти нужное намного сложнее — до 90 клеток.</li>
+          <li><b>Сетка</b> — классическая квадратная таблица Шульте от 3×3 до 9×9.</li>
+        </ul>
         <h3>Режимы</h3>
         <ul>
           <li><b>Числа</b> — от 1 до последнего.</li>

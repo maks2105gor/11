@@ -16,6 +16,13 @@
   --cell-found: 0.18;
   --shadow: 0 1px 2px rgb(20 30 60 / 6%), 0 4px 16px rgb(20 30 60 / 6%);
   --radius: 16px;
+  /* The chaotic board is painted like a printed poster and keeps its colours in both themes. */
+  --paper: #fbf5df;
+  --pink: #f6bcb5;
+  --mint: #bfe2d3;
+  --apricot: #f5c68f;
+  --ink: #4b5058;
+  --ink-red: #c9303a;
   color-scheme: light;
 }
 
@@ -67,10 +74,13 @@ body {
 
 #app {
   max-width: 560px;
+  transition: max-width .2s;
   margin: 0 auto;
   min-height: 100%;
   padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
 }
+
+body.wide #app { max-width: 1500px; }
 
 .screen { display: none; flex-direction: column; gap: 14px; animation: fade .2s ease; }
 .screen.active { display: flex; }
@@ -149,7 +159,17 @@ h3 { font-size: .95rem; margin-bottom: 8px; }
 .progress-bar { height: 100%; width: 0; background: var(--accent); transition: width .15s ease; }
 
 /* Board */
-.board-wrap { position: relative; width: 100%; aspect-ratio: 1; }
+.board-wrap {
+  --ar: 1;
+  --chrome: 190px; /* HUD, progress bar, hint and paddings */
+  position: relative;
+  aspect-ratio: var(--ar);
+  width: min(100%, calc((100vh - var(--chrome)) * var(--ar)));
+  width: min(100%, calc((100dvh - var(--chrome)) * var(--ar)));
+  max-width: 100%;
+  margin-inline: auto;
+}
+.board[hidden], .chaos[hidden] { display: none; }
 .board {
   --n: 5;
   display: grid; width: 100%; height: 100%;
@@ -174,9 +194,43 @@ h3 { font-size: .95rem; margin-bottom: 8px; }
 .cell.miss { animation: miss .3s ease; background: color-mix(in srgb, var(--bad) 30%, var(--cell)); }
 @keyframes hit { 50% { transform: scale(.88); background: color-mix(in srgb, var(--good) 35%, var(--cell)); } }
 @keyframes miss { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
-.board.locked { pointer-events: none; filter: blur(6px); }
+.board-wrap.locked .board,
+.board-wrap.locked .chaos { pointer-events: none; filter: blur(8px); }
+
+/* Chaotic board */
+.chaos {
+  display: block; width: 100%; height: 100%;
+  background: var(--ink); border: 3px solid var(--ink); border-radius: 14px;
+  user-select: none; touch-action: manipulation; -webkit-user-select: none;
+}
+.zone { cursor: pointer; outline: none; }
+.zone path { stroke: var(--ink); stroke-width: 3.5; stroke-linejoin: round; }
+.zone.f0 path { fill: var(--paper); }
+.zone.f1 path { fill: var(--pink); }
+.zone.f2 path { fill: var(--mint); }
+.zone.f3 path { fill: var(--apricot); }
+.zone text {
+  fill: var(--ink); font: 600 100px "Oswald", "Arial Narrow", "Roboto Condensed", sans-serif;
+  pointer-events: none;
+}
+.zone.red text { fill: var(--ink-red); }
+.zone.found text { opacity: .2; }
+.zone:focus-visible path { stroke: var(--accent); stroke-width: 7; }
+.zone.hit path { animation: zone-hit .3s ease; }
+.zone.miss path { animation: zone-miss .35s ease; }
+@keyframes zone-hit { 40% { fill: #9fdcb4; } }
+@keyframes zone-miss { 30% { fill: #f28b8b; } }
+
+.paused {
+  position: absolute; inset: 0; z-index: 2; border: 0; border-radius: 14px; cursor: pointer;
+  display: grid; place-content: center; gap: 6px;
+  background: var(--surface); color: var(--text); font: 800 2rem/1.1 system-ui, sans-serif;
+}
+.paused[hidden] { display: none; }
+.paused small { font-size: .9rem; font-weight: 500; color: var(--muted); }
 
 .focus-dot {
+  z-index: 1;
   position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px;
   border-radius: 50%; background: var(--bad); box-shadow: 0 0 0 3px var(--surface);
   pointer-events: none; display: none;
@@ -184,6 +238,7 @@ h3 { font-size: .95rem; margin-bottom: 8px; }
 .focus-dot.on { display: block; }
 
 .countdown {
+  z-index: 1;
   position: absolute; inset: 0; display: none; place-items: center;
   font-size: 5rem; font-weight: 900; color: var(--accent); pointer-events: none;
 }
@@ -218,6 +273,7 @@ h3 { font-size: .95rem; margin-bottom: 8px; }
 .totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
 .totals b { display: block; font-size: 1.4rem; }
 .totals span { font-size: .75rem; color: var(--muted); text-transform: uppercase; }
+.records-wrap { display: flex; flex-direction: column; gap: 14px; }
 .table-scroll { overflow-x: auto; }
 .records { width: 100%; border-collapse: collapse; font-size: .88rem; font-variant-numeric: tabular-nums; }
 .records th, .records td { padding: 6px 4px; text-align: center; border-bottom: 1px solid var(--line); white-space: nowrap; }
@@ -261,6 +317,17 @@ h3 { font-size: .95rem; margin-bottom: 8px; }
 .prose ul { margin: 0 0 12px; padding-left: 20px; }
 .prose li { margin-bottom: 6px; }
 .prose h3 { margin-top: 6px; }
+
+/* Phones in landscape: a compact HUD leaves the height to the board. */
+@media (max-height: 520px) and (orientation: landscape) {
+  #app { padding-block: 8px; }
+  #screen-game { gap: 6px; }
+  .hud-item { padding: 2px 8px; display: flex; align-items: baseline; justify-content: center; gap: 6px; }
+  .hud-value, .hud-target { font-size: 1rem; }
+  .icon-btn { width: 34px; height: 34px; }
+  .game-hint { display: none; }
+  .board-wrap { --chrome: 70px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

@@ -1,14 +1,28 @@
 // Pure game logic for Schulte tables. No DOM access, so it can be tested in Node.
 
+// sizes: grid side lengths; chaos: cell counts on the chaotic board.
 export const MODES = {
-  numbers: { title: 'Числа', hint: 'Найдите числа по порядку от 1 до N', sizes: [3, 4, 5, 6, 7, 8, 9] },
-  reverse: { title: 'Обратный счёт', hint: 'Найдите числа от N до 1', sizes: [3, 4, 5, 6, 7, 8, 9] },
-  letters: { title: 'Буквы', hint: 'Найдите буквы в алфавитном порядке', sizes: [3, 4, 5] },
-  gorbov: {
-    title: 'Красно-чёрная',
-    hint: 'Чередуйте: чёрные по возрастанию, красные по убыванию',
-    sizes: [3, 4, 5, 6, 7],
+  numbers: {
+    title: 'Числа', hint: 'Найдите числа по порядку от 1 до N',
+    sizes: [3, 4, 5, 6, 7, 8, 9], chaos: [30, 60, 90],
   },
+  reverse: {
+    title: 'Обратный счёт', hint: 'Найдите числа от N до 1',
+    sizes: [3, 4, 5, 6, 7, 8, 9], chaos: [30, 60, 90],
+  },
+  letters: {
+    title: 'Буквы', hint: 'Найдите буквы в алфавитном порядке',
+    sizes: [3, 4, 5], chaos: [15, 25],
+  },
+  gorbov: {
+    title: 'Красно-чёрная', hint: 'Чередуйте: чёрные по возрастанию, красные по убыванию',
+    sizes: [3, 4, 5, 6, 7], chaos: [30, 60, 90],
+  },
+};
+
+export const LAYOUTS = {
+  chaos: { title: 'Хаос', hint: 'Клетки всех форм и размеров вперемешку' },
+  grid: { title: 'Сетка', hint: 'Классическая таблица Шульте' },
 };
 
 // Without Ё, Й, Ъ, Ь — the letters that are easy to confuse or rarely used.
@@ -23,15 +37,28 @@ export function shuffle(array, random = Math.random) {
   return a;
 }
 
-export function isValidSize(mode, size) {
-  return Boolean(MODES[mode]) && MODES[mode].sizes.includes(size);
+export function levels(mode, layout) {
+  if (!MODES[mode] || !LAYOUTS[layout]) return [];
+  return layout === 'grid' ? MODES[mode].sizes : MODES[mode].chaos;
 }
 
-// Returns the cells in the order the player must find them.
+export function isValidLevel(mode, layout, level) {
+  return levels(mode, layout).includes(level);
+}
+
+export function cellCount(layout, level) {
+  return layout === 'grid' ? level * level : level;
+}
+
+export function levelLabel(layout, level) {
+  return layout === 'grid' ? `${level}×${level}` : String(level);
+}
+
+// Returns the n cells in the order the player must find them.
 // Each cell: { id, label, color } where color is 'black' | 'red' | null.
-export function buildSequence(mode, size) {
-  if (!isValidSize(mode, size)) throw new Error(`Unsupported mode/size: ${mode} ${size}`);
-  const n = size * size;
+export function buildSequence(mode, n) {
+  if (!MODES[mode] || !Number.isInteger(n) || n < 1) throw new Error(`Unsupported mode/count: ${mode} ${n}`);
+  if (mode === 'letters' && n > ALPHABET.length) throw new Error(`Not enough letters for ${n} cells`);
   const make = (label, color = null) => ({ label: String(label), color });
   let seq;
 
@@ -59,23 +86,40 @@ export function buildSequence(mode, size) {
   return seq.map((cell, id) => ({ id, ...cell }));
 }
 
-export function createGame(mode, size, random = Math.random) {
-  const sequence = buildSequence(mode, size);
+export function createGame(mode, layout, level, random = Math.random) {
+  if (!isValidLevel(mode, layout, level)) throw new Error(`Unsupported board: ${mode} ${layout} ${level}`);
+  const sequence = buildSequence(mode, cellCount(layout, level));
   return {
     mode,
-    size,
+    layout,
+    level,
     sequence,
-    board: shuffle(sequence, random),
+    board: shuffle(sequence, random), // board[i] is the item shown in cell i
     next: 0,
     mistakes: 0,
     startedAt: null,
     finishedAt: null,
+    pausedAt: null,
+    pausedTotal: 0,
   };
+}
+
+export function pause(game, now = Date.now()) {
+  if (game.startedAt === null || game.finishedAt !== null || game.pausedAt !== null) return false;
+  game.pausedAt = now;
+  return true;
+}
+
+export function resume(game, now = Date.now()) {
+  if (game.pausedAt === null) return false;
+  game.pausedTotal += now - game.pausedAt;
+  game.pausedAt = null;
+  return true;
 }
 
 // Applies a tap on the cell with the given id. Returns 'hit', 'miss', 'done' or 'ignored'.
 export function tap(game, cellId, now = Date.now()) {
-  if (game.finishedAt !== null) return 'ignored';
+  if (game.finishedAt !== null || game.pausedAt !== null) return 'ignored';
   if (game.startedAt === null) game.startedAt = now;
   if (cellId < game.next) return 'ignored'; // already found
   if (cellId !== game.next) {
@@ -96,11 +140,13 @@ export function currentTarget(game) {
 
 export function elapsed(game, now = Date.now()) {
   if (game.startedAt === null) return 0;
-  return (game.finishedAt ?? now) - game.startedAt;
+  const end = game.finishedAt ?? game.pausedAt ?? now;
+  return end - game.startedAt - game.pausedTotal;
 }
 
-export function recordKey(mode, size) {
-  return `${mode}-${size}`;
+// Grid keys keep the original "mode-size" format so older records stay valid.
+export function recordKey(mode, layout, level) {
+  return layout === 'grid' ? `${mode}-${level}` : `${mode}-x${level}`;
 }
 
 export function formatTime(ms) {
@@ -112,8 +158,9 @@ export function formatTime(ms) {
 }
 
 // Rough attention rating based on seconds per cell; mistakes add a penalty.
-export function rating(ms, cells, mistakes) {
-  const perCell = ms / 1000 / cells + mistakes * 0.3 / cells;
+// Chaotic boards are much harder to scan, so their thresholds are doubled.
+export function rating(ms, cells, mistakes, layout = 'grid') {
+  const perCell = (ms / 1000 / cells + mistakes * 0.3 / cells) / (layout === 'chaos' ? 2 : 1);
   if (perCell <= 0.8) return { stars: 5, text: 'Феноменально!' };
   if (perCell <= 1.2) return { stars: 4, text: 'Отличное внимание' };
   if (perCell <= 1.7) return { stars: 3, text: 'Хороший результат' };
@@ -123,7 +170,7 @@ export function rating(ms, cells, mistakes) {
 
 // Pure record/history update. Returns { stats, isRecord }.
 export function addResult(stats, result, historyLimit = 100) {
-  const key = recordKey(result.mode, result.size);
+  const key = resultKey(result);
   const prev = stats.best?.[key];
   const isRecord = prev === undefined || result.time < prev.time;
   const best = { ...(stats.best || {}) };
@@ -132,8 +179,13 @@ export function addResult(stats, result, historyLimit = 100) {
   return { stats: { best, history }, isRecord };
 }
 
-export function summarize(history, mode, size) {
-  const games = history.filter((r) => r.mode === mode && r.size === size);
+// Results saved before layouts existed have only mode and size.
+export function resultKey(r) {
+  return r.layout ? recordKey(r.mode, r.layout, r.level) : recordKey(r.mode, 'grid', r.size);
+}
+
+export function summarize(history, key) {
+  const games = history.filter((r) => resultKey(r) === key);
   if (!games.length) return null;
   const total = games.reduce((s, r) => s + r.time, 0);
   return {
