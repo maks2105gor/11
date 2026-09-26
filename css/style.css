@@ -48,6 +48,14 @@ body.in-game #app { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
 
 h1, h2, h3 { margin: 0; line-height: 1.1; font-family: var(--display); font-weight: 600; text-wrap: balance; }
 
+/* ---------- Icons: ink strokes with rounded ends, sized by the text around them ---------- */
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.icon {
+  width: 1.1em; height: 1.1em; flex: none; vertical-align: -.16em;
+  fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round;
+  --fill: var(--paper);
+}
+
 /* ---------- Mosaic: ink shows through the gaps between tiles ---------- */
 .mosaic {
   display: flex; flex-direction: column; gap: var(--line);
@@ -76,6 +84,9 @@ button.tile:focus-visible, .chip:focus-visible, .timer:focus-visible, .paused:fo
   outline: 3px solid var(--ink-red); outline-offset: -6px;
 }
 .tiles > .btn { flex: 1; padding: 14px 6px; font-size: .95rem; }
+.tiles > .btn .icon { display: block; width: 1.7em; height: 1.7em; margin: 0 auto 6px; }
+.quit .icon, .back .icon { width: 1.5em; height: 1.5em; vertical-align: middle; }
+.play .icon { width: .8em; height: .8em; vertical-align: -.02em; }
 
 /* Thin label strips, like the "18" band at the top of the board */
 .strip {
@@ -124,7 +135,6 @@ button.tile:focus-visible, .chip:focus-visible, .timer:focus-visible, .paused:fo
   padding: 20px; font-size: 1.7rem !important; font-weight: 700 !important; letter-spacing: .12em !important;
   display: flex; align-items: center; justify-content: center; gap: 14px;
 }
-.play span { font-size: 1.1rem; }
 
 /* ---------- HUD ---------- */
 .hud { align-items: stretch; }
@@ -143,11 +153,11 @@ button.tile:focus-visible, .chip:focus-visible, .timer:focus-visible, .paused:fo
 .timer-tile { flex: 1.8; padding: 8px 10px; }
 .timer {
   appearance: none; border: var(--line) solid var(--ink); cursor: pointer; width: 100%;
-  display: flex; align-items: center; gap: 10px; padding: 6px 14px;
+  display: flex; align-items: center; gap: 6px; padding: 6px 10px;
   background: var(--timer); color: #fff; border-radius: 999px;
   font: 600 1.45rem/1 var(--display); font-variant-numeric: tabular-nums;
 }
-.timer-icon { font-size: 1rem; letter-spacing: -.05em; }
+.timer-icon { width: 1.1rem; height: 1.1rem; stroke: none; fill: currentColor; }
 .timer-time { flex: 1; text-align: center; }
 
 .progress { padding: 0; height: 10px; }
@@ -268,8 +278,12 @@ button.tile:focus-visible, .chip:focus-visible, .timer:focus-visible, .paused:fo
   margin: 0; font: 700 clamp(2.6rem, 13vw, 4.4rem)/1 var(--display); font-variant-numeric: tabular-nums;
 }
 .stars-tile { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-.stars { font-size: 1.5rem; letter-spacing: 1px; color: var(--paper); -webkit-text-stroke: 1.5px var(--ink); white-space: nowrap; }
-.stars .on { color: var(--apricot); }
+.stars { display: flex; justify-content: center; gap: 1px; }
+.star {
+  width: clamp(20px, 6vw, 30px); height: clamp(20px, 6vw, 30px);
+  stroke: var(--ink); stroke-width: 1.8; stroke-linejoin: round; --fill: var(--paper);
+}
+.star.on { --fill: var(--apricot); }
 .result-sub { margin: 4px 0 0; font: 500 .9rem/1.2 var(--display); text-transform: uppercase; letter-spacing: .04em; }
 .stat { flex: 1; text-align: center; padding: 10px 4px; }
 .stat b { display: block; font: 600 1.35rem var(--display); font-variant-numeric: tabular-nums; }
@@ -351,7 +365,8 @@ button.tile:focus-visible, .chip:focus-visible, .timer:focus-visible, .paused:fo
   .levels .chip { --basis: 40%; }
   .modes .chip { --basis: 40%; }
   .play { padding: 12px; font-size: 1.5rem !important; }
-  .tiles > .btn { padding: 10px 4px; font-size: .85rem; }
+  .tiles > .btn { padding: 8px 4px; font-size: .85rem; }
+  .tiles > .btn .icon { width: 1.4em; height: 1.4em; margin-bottom: 3px; }
   .result-time { font-size: 3rem; }
 
   #screen-game {
@@ -365,7 +380,7 @@ button.tile:focus-visible, .chip:focus-visible, .timer:focus-visible, .paused:fo
   .hud-value, .hud-target { font-size: 1.5rem; }
   .timer-tile { padding: 8px 6px; }
   .timer { flex-direction: column; gap: 2px; padding: 6px 4px; border-radius: 22px; font-size: 1.25rem; }
-  .timer-icon { font-size: .8rem; }
+  .timer-icon { width: .9rem; height: .9rem; }
   .progress { height: 8px; }
   .board-wrap { --chrome: 20px; --side: 128px; grid-column: 2; }
   .game-hint { display: none; }

@@ -396,7 +396,7 @@ function stopGame() {
 
 function setPaused(on) {
   $('#paused').hidden = !on;
-  $('#pause-icon').textContent = on ? '▶' : 'II';
+  $('#pause-icon use').setAttribute('href', on ? '#i-play' : '#i-pause');
   $('#btn-pause').setAttribute('aria-label', on ? 'Продолжить' : 'Пауза');
 }
 
@@ -477,7 +477,9 @@ function finishGame() {
   $('#result-badge').classList.toggle('on', isRecord && hadRecord);
   $('#result-title').textContent =
     `${MODES[game.mode].title} · ${LAYOUTS[game.layout].title} ${levelLabel(game.layout, game.level)}`;
-  $('#result-stars').innerHTML = [1, 2, 3, 4, 5].map((i) => `<span class="${i <= r.stars ? 'on' : ''}">★</span>`).join('');
+  $('#result-stars').innerHTML = [1, 2, 3, 4, 5]
+    .map((i) => `<svg class="star${i <= r.stars ? ' on' : ''}" aria-hidden="true"><use href="#i-star"/></svg>`).join('');
+  $('#result-stars').setAttribute('aria-label', `${r.stars} из 5`);
   $('#result-time').textContent = `${formatTime(time)} с`;
   $('#result-rating').textContent = r.text;
   $('#result-miss').textContent = game.mistakes;
