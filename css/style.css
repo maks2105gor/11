@@ -21,6 +21,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 html, body { margin: 0; height: 100%; }
 
@@ -100,6 +101,9 @@ button.tile:focus-visible, .chip:focus-visible, .timer:focus-visible, .paused:fo
 #best-line b { color: var(--ink); font: 600 1rem var(--display); letter-spacing: 0; text-transform: none; }
 
 /* ---------- Menu ---------- */
+.home { align-items: center; color: var(--ink); text-decoration: none; padding-block: 8px; }
+.home:hover { filter: brightness(.97); }
+.home:focus-visible { outline: 3px solid var(--ink-red); outline-offset: -6px; }
 .brand { min-height: 120px; }
 .logo { flex: 0 0 120px; display: grid; place-items: center; padding: 10px; }
 .logo svg { width: 96px; height: 96px; }

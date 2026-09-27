@@ -678,6 +678,13 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+// On the game server the menu links back to the hub with all games.
+const portalUrl = document.querySelector('meta[name="portal-url"]')?.content;
+if (portalUrl) {
+  $('#portal-link').href = portalUrl;
+  $('#portal-link').hidden = false;
+}
+
 // ---------- Init ----------
 renderMenu();
 
