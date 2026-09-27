@@ -1,27 +1,29 @@
-# Перенос на VPS: главное меню + игры
+# Перенос на VPS: главное меню + Amazing Table
 
-Домен: **amazin-table.myosincos.info**. После переноса сайт устроен так:
+Как устроено:
 
 | Адрес | Что там | Откуда файлы |
 |---|---|---|
 | https://amazin-table.myosincos.info/ | главное меню «Во что сыграем?» | `portal/` |
 | https://amazin-table.myosincos.info/amazing-table/ | Amazing Table | корень репозитория |
-| https://amazin-table.myosincos.info/cards/ | Карточный стол | ваша текущая игра |
+| https://play.myosincos.info/ | Карточный стол | как сейчас, не меняется |
+
+Карточный стол остаётся на своём домене со своим конфигом nginx. Меню просто ведёт на
+него плиткой, а на Карточном столе можно добавить ссылку обратно в меню (шаг 5).
+
+На сервере новые файлы лежат в `/var/www/games/`:
+
+```
+/var/www/games/
+├── portal/          главное меню
+└── amazing-table/   Amazing Table
+```
 
 ## 0. DNS
 
 У регистратора домена `myosincos.info` добавьте A-запись: имя `amazin-table`, значение —
-IP вашего VPS. Проверка: `ping amazin-table.myosincos.info` должен показать этот IP
-(обновление DNS занимает от нескольких минут до часа).
-
-На сервере всё лежит в `/var/www/games/`:
-
-```
-/var/www/games/
-├── portal/          главное меню (кладёт deploy.sh)
-├── amazing-table/   Amazing Table (кладёт deploy.sh)
-└── cards/           Карточный стол (если это статические файлы — копируете сами)
-```
+IP вашего VPS (тот же, что у `play`). Проверка: `ping amazin-table.myosincos.info` должен
+показать этот IP (обновление DNS занимает от нескольких минут до часа).
 
 ## 1. Забрать код на сервер
 
@@ -46,61 +48,44 @@ sudo ./deploy/deploy.sh
 cd /opt/games && sudo git pull && sudo ./deploy/deploy.sh
 ```
 
-## 3. Подключить Карточный стол
+## 3. Включить конфиг nginx
 
-Посмотрите, как игра запущена сейчас (`ls /etc/nginx/sites-enabled/` и файл внутри).
-
-**Если это папка с `index.html`** (в конфиге есть `root /какой-то/путь;`):
+Конфиг отдельный, на старый конфиг `play.myosincos.info` он не влияет — тот не трогайте.
 
 ```bash
-sudo cp -R /какой-то/путь /var/www/games/cards
-```
-
-В `deploy/nginx-games.conf` оставьте вариант А.
-
-**Если это приложение на порту** (в конфиге есть `proxy_pass http://127.0.0.1:ПОРТ;`):
-в `deploy/nginx-games.conf` закомментируйте вариант А, раскомментируйте вариант Б и
-поставьте свой порт.
-
-> Игра переезжает с `/` на `/cards/`. Если в её HTML пути к файлам абсолютные
-> (`src="/app.js"`, `href="/style.css"`), уберите начальный слэш (`src="app.js"`),
-> иначе браузер будет искать их в корне сайта. Для приложения на порту то же касается
-> адресов API в JS (`fetch('/api/...')` → `fetch('api/...')`).
-
-## 4. Включить конфиг nginx
-
-```bash
-# server_name уже стоит amazin-table.myosincos.info; поменяйте, если домен другой
-sudo cp deploy/nginx-games.conf /etc/nginx/sites-available/games.conf
-sudo ln -s /etc/nginx/sites-available/games.conf /etc/nginx/sites-enabled/
-sudo rm /etc/nginx/sites-enabled/<старый конфиг карточной игры>   # чтобы не было двух server на один домен
+sudo cp deploy/nginx-games.conf /etc/nginx/sites-available/amazin-table.conf
+sudo ln -s /etc/nginx/sites-available/amazin-table.conf /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-HTTPS (после того как DNS из шага 0 заработал):
+Проверка без HTTPS: http://amazin-table.myosincos.info/ — должно появиться меню.
+
+## 4. HTTPS
 
 ```bash
-sudo apt install -y certbot python3-certbot-nginx
+sudo apt install -y certbot python3-certbot-nginx   # если ещё не стоит
 sudo certbot --nginx -d amazin-table.myosincos.info
 ```
 
-Проверка: откройте https://amazin-table.myosincos.info/ — должно появиться меню с двумя играми.
+Готово: https://amazin-table.myosincos.info/ — меню с двумя играми. После HTTPS у Amazing
+Table включается офлайн-режим и установка на экран телефона.
 
-## 5. Кнопка «Все игры» в Карточном столе
+## 5. Ссылка «Все игры» в Карточном столе
 
-В Amazing Table кнопка уже есть (строка `<meta name="portal-url" content="/">` в
-`index.html`). В Карточный стол добавьте ссылку в любое место меню, например под
-заголовок «Карточный стол»:
+В Amazing Table кнопка «← Все игры» уже есть. В Карточный стол добавьте ссылку в любое
+место меню, например под заголовок «Карточный стол»:
 
 ```html
-<a href="/" style="display:inline-block;margin-top:8px;color:#e6c27a;text-decoration:none;
-   font:600 14px/1 system-ui,sans-serif;letter-spacing:.08em">← ВСЕ ИГРЫ</a>
+<a href="https://amazin-table.myosincos.info/"
+   style="display:inline-block;margin-top:8px;color:#e6c27a;text-decoration:none;
+          font:600 14px/1 system-ui,sans-serif;letter-spacing:.08em">← ВСЕ ИГРЫ</a>
 ```
 
 ## Добавить новую игру в меню
 
-В `portal/index.html` скопируйте один блок `<li>…</li>`, поменяйте адрес, название и
-иконку (`portal/icons/`, квадрат 512×512), затем `sudo ./deploy/deploy.sh`.
+В `portal/index.html` скопируйте один блок `<li>…</li>`, поменяйте адрес (путь на этом
+сайте или полный адрес другого домена), название и иконку (`portal/icons/`, квадрат
+512×512), затем `sudo ./deploy/deploy.sh`.
 
 ## Цвета
 
