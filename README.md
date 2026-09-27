@@ -56,9 +56,9 @@ npm test
 
 ## На сервере вместе с другими играми
 
-В папке `portal/` — главное меню «Во что сыграем?» с квадратными иконками игр, в `deploy/` —
-конфиг nginx для домена amazin-table.myosincos.info и скрипт выкладки. Карточный стол
-остаётся на play.myosincos.info, меню ссылается на него. Пошаговая инструкция:
+Каждая часть на своём поддомене: меню — games.myosincos.info (`portal/`), Amazing Table —
+amazin-table.myosincos.info, Карточный стол остаётся на play.myosincos.info. В `deploy/` —
+конфиг nginx для обоих новых поддоменов и скрипт выкладки. Пошаговая инструкция:
 [deploy/README.md](deploy/README.md).
 
 ## Структура
