@@ -39,10 +39,12 @@ cd games
 ## Шаг 3. Узнать папку Карточного стола
 
 ```bash
-sudo grep -rA15 "play.myosincos.info" /etc/nginx/sites-enabled/ | grep -m1 -w root
+sudo grep -RA15 "server_name play.myosincos.info" /etc/nginx/ | grep -m1 -w root
 ```
 
-Покажет строку вида `root /var/www/play;` — это и есть папка. Если вместо `root` там
+Покажет строку вида `root /var/www/play;` — это и есть папка (на вашем сервере это
+`/var/www/play`). Если команда ничего не вывела, найдите сам файл игры:
+`sudo grep -rl "Пятая карта" /var /srv /home /opt --include='*.html' | grep -v /opt/games`. Если вместо `root` там
 `proxy_pass` (игра запущена как приложение), найдите, откуда приложение отдаёт
 `index.html`, и используйте ту папку.
 
