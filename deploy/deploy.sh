@@ -3,6 +3,7 @@
 # Запуск из корня репозитория на сервере:
 #   sudo ./deploy/deploy.sh
 # Папку можно поменять: sudo GAMES_ROOT=/srv/games ./deploy/deploy.sh
+# Вместе с Карточным столом: sudo PLAY_ROOT=/папка/play ./deploy/deploy.sh
 set -euo pipefail
 
 ROOT="${GAMES_ROOT:-/var/www/games}"
@@ -30,7 +31,22 @@ publish amazing-table \
   "$REPO/index.html" "$REPO/manifest.webmanifest" "$REPO/sw.js" "$REPO/icon.svg" \
   "$REPO/css" "$REPO/js"
 
+# Карточный стол (play.myosincos.info) обновляется, только если указана его папка:
+#   sudo PLAY_ROOT=/var/www/play ./deploy/deploy.sh
+# Старый index.html сохраняется рядом как index.html.bak-ДАТА.
+if [ -n "${PLAY_ROOT:-}" ]; then
+  if [ -f "$PLAY_ROOT/index.html" ]; then
+    cp "$PLAY_ROOT/index.html" "$PLAY_ROOT/index.html.bak-$(date +%Y%m%d-%H%M%S)"
+  fi
+  install -m 644 "$REPO/cards/index.html" "$PLAY_ROOT/index.html"
+  echo "  $PLAY_ROOT/index.html (Карточный стол)"
+fi
+
 if command -v nginx >/dev/null 2>&1; then
-  nginx -t && systemctl reload nginx && echo "nginx перезагружен"
+  if nginx -t && systemctl reload nginx; then
+    echo "nginx перезагружен"
+  else
+    echo "ВНИМАНИЕ: nginx не перезагружен. Проверьте конфиг: sudo nginx -t, затем sudo systemctl reload nginx" >&2
+  fi
 fi
 echo "Готово."

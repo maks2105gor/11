@@ -57,7 +57,8 @@ npm test
 ## На сервере вместе с другими играми
 
 Каждая часть на своём поддомене: меню — games.myosincos.info (`portal/`), Amazing Table —
-amazin-table.myosincos.info, Карточный стол остаётся на play.myosincos.info. В `deploy/` —
+amazin-table.myosincos.info, Карточный стол — play.myosincos.info (`cards/index.html`, копия
+игры с кнопкой «← все игры»). В `deploy/` —
 конфиг nginx для обоих новых поддоменов и скрипт выкладки. Пошаговая инструкция:
 [deploy/README.md](deploy/README.md).
 
@@ -72,6 +73,7 @@ js/app.js             интерфейс, таймер, звук, сохране
 sw.js, manifest.webmanifest, icon.svg   PWA и офлайн-режим
 tests/               тесты логики и генератора поля
 portal/              главное меню со всеми играми (статическая страница)
+cards/               Карточный стол (Пятая карта, Blackjack) со ссылкой в меню
 deploy/              nginx-конфиг, скрипт выкладки и инструкция для VPS
 ```
 
