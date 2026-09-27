@@ -66,6 +66,9 @@ sudo PLAY_ROOT=/var/www/play ./deploy/deploy.sh
 
 ## Шаг 5. Включить сайты в nginx (один раз)
 
+> Только при первой установке. После шага 6 certbot дописывает HTTPS прямо в
+> `/etc/nginx/sites-available/games.conf`, и повторное копирование его затрёт.
+
 ```bash
 sudo cp deploy/nginx-games.conf /etc/nginx/sites-available/games.conf
 sudo ln -s /etc/nginx/sites-available/games.conf /etc/nginx/sites-enabled/
@@ -85,7 +88,15 @@ sudo certbot --nginx -d games.myosincos.info -d amazin-table.myosincos.info
 
 ## Как обновлять потом
 
-Повторите шаги 2 и 4 — DNS, nginx и HTTPS второй раз настраивать не нужно.
+Только шаги 2 и 4 — DNS, nginx и HTTPS второй раз настраивать не нужно (а шаг 5 и вредно:
+он сотрёт настройки HTTPS):
+
+```bash
+cd /opt && sudo rm -rf games
+curl -L https://github.com/maks2105gor/11/archive/refs/heads/claude/hello-rruojc.tar.gz | sudo tar -xz
+sudo mv 11-claude-hello-rruojc games && cd games
+sudo PLAY_ROOT=/var/www/play ./deploy/deploy.sh
+```
 
 ## Откатить Карточный стол
 
