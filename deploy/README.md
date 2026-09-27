@@ -98,6 +98,43 @@ sudo mv 11-claude-hello-rruojc games && cd games
 sudo PLAY_ROOT=/var/www/play ./deploy/deploy.sh
 ```
 
+## Сертификаты HTTPS
+
+Let's Encrypt выдаёт сертификаты на 90 дней; certbot продлевает их сам, когда остаётся
+меньше 30 дней. Настроить один раз (шаги 2–4), дальше только поглядывать на шаг 1.
+
+```bash
+# 1. Все сертификаты и сроки (play.myosincos.info и games.myosincos.info + amazin-table)
+sudo certbot certificates
+
+# 2. Автопродление включено? Должна быть строка certbot.timer
+systemctl list-timers | grep -i certbot
+sudo systemctl enable --now certbot.timer          # если строки нет
+# нет ни certbot.timer, ни snap.certbot.renew.timer — запасной вариант через cron:
+echo '17 3,15 * * * root certbot renew --quiet' | sudo tee /etc/cron.d/certbot-renew
+
+# 3. Пробное продление (ничего не меняет)
+sudo certbot renew --dry-run
+
+# 4. Перезагружать nginx после каждого продления
+sudo mkdir -p /etc/letsencrypt/renewal-hooks/deploy
+printf '#!/bin/sh\nsystemctl reload nginx\n' | sudo tee /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+
+# 5. Продлить вручную (пропустит те, где осталось больше 30 дней)
+sudo certbot renew
+sudo certbot renew --force-renewal                 # только при проблемах: лимит ~5 в неделю
+
+# 6. Какой сертификат видят посетители
+for d in games.myosincos.info amazin-table.myosincos.info play.myosincos.info; do
+  printf "%-30s " $d
+  echo | openssl s_client -connect $d:443 -servername $d 2>/dev/null | openssl x509 -noout -enddate
+done
+```
+
+Если продление не проходит: лог — `sudo tail -50 /var/log/letsencrypt/letsencrypt.log`;
+сайт должен открываться по `http://` на порту 80, а DNS — указывать на этот сервер.
+
 ## Откатить Карточный стол
 
 ```bash
