@@ -688,6 +688,7 @@ if (portalUrl) {
 // ---------- Init ----------
 renderMenu();
 
-if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+// The Android app ships its files inside the APK, so it needs no service worker.
+if ('serviceWorker' in navigator && location.protocol !== 'file:' && !window.Capacitor) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }

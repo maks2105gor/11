@@ -1,0 +1,15 @@
+{
+  "appId": "info.myosincos.amazingtable",
+  "appName": "Amazing Table",
+  "webDir": "www",
+  "backgroundColor": "#efe5c8",
+  "android": {
+    "backgroundColor": "#efe5c8"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "native",
+      "style": "LIGHT"
+    }
+  }
+}

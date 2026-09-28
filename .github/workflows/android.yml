@@ -1,0 +1,67 @@
+name: Android APK
+
+# Builds the Android app of Amazing Table and publishes the APK as the
+# "android-latest" release, so it can be downloaded straight to a phone.
+on:
+  push:
+    branches: [main, claude/hello-rruojc]
+    paths:
+      - index.html
+      - css/**
+      - js/**
+      - icon.svg
+      - app-android/**
+      - .github/workflows/android.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write # to publish the release with the APK
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app-android/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Build APK
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./app-android/scripts/build-apk.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: amazing-table-android
+          path: app-android/dist/*
+          if-no-files-found: error
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          signed=$([ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ] && echo "release key" || echo "debug key")
+          gh release delete android-latest --yes --cleanup-tag 2>/dev/null || true
+          gh release create android-latest app-android/dist/* \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "Amazing Table для Android — сборка ${{ github.run_number }}" \
+            --notes "Сборка ${{ github.run_number }} из ветки ${{ github.ref_name }} (коммит ${GITHUB_SHA::7}), подпись: $signed. Скачайте APK на телефон и откройте его, чтобы установить."
