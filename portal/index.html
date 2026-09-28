@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1d1a22">
+  <meta name="description" content="Выберите игру: Карточный стол или Amazing Table">
+  <title>Игры</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&family=PT+Serif:wght@700&display=swap">
+  <style>
+    /* The hub sits between its two games: the dark ground and gold of the card table,
+       the cream paper and PT Sans of Amazing Table, on a new plum-graphite background. */
+    :root {
+      --ground: #1d1a22;
+      --ground-glow: #2a2330;
+      --line: #3a3340;
+      --text: #f3ead3;
+      --muted: #a79eaa;
+      --gold: #f0d48a;
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { margin: 0; min-height: 100%; }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      background: radial-gradient(120% 70% at 50% 0%, var(--ground-glow), var(--ground) 60%) fixed, var(--ground);
+      color: var(--text);
+      font: 16px/1.4 "PT Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 36px;
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: max(32px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+        max(32px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+    }
+
+    header { text-align: center; }
+    .eyebrow {
+      margin: 0 0 10px;
+      font-size: .78rem;
+      letter-spacing: .32em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    h1 {
+      margin: 0;
+      font: 700 clamp(2rem, 8vw, 2.8rem)/1.1 "PT Serif", Georgia, serif;
+      color: var(--gold);
+      text-wrap: balance;
+    }
+
+    .games {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      /* Two squares side by side on a phone, more per row on wider screens. */
+      grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+      gap: 28px 20px;
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    .game {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      text-align: center;
+      color: inherit;
+      text-decoration: none;
+      outline: none;
+    }
+    .game img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 24%;
+      box-shadow: 0 0 0 1px var(--line), 0 14px 30px -12px rgb(0 0 0 / 70%);
+      transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .game:hover img,
+    .game:focus-visible img {
+      transform: translateY(-4px);
+      box-shadow: 0 0 0 2px var(--gold), 0 20px 36px -14px rgb(0 0 0 / 80%);
+    }
+    .game:active img { transform: scale(.97); }
+    .game b { font-size: 1.08rem; letter-spacing: .01em; }
+    .game span { margin-top: -8px; font-size: .88rem; color: var(--muted); }
+
+    footer {
+      text-align: center;
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+      font-size: .78rem;
+      color: var(--muted);
+      letter-spacing: .08em;
+    }
+
+    /* Landscape phones: a tighter column so both squares fit on screen. */
+    @media (orientation: landscape) and (max-height: 520px) {
+      main { gap: 18px; padding-block: 14px; }
+      .games { max-width: 320px; gap: 16px; }
+      .eyebrow { display: none; }
+      h1 { font-size: 1.8rem; }
+      footer { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .game img { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">Игровой зал</p>
+      <h1>Во что сыграем?</h1>
+    </header>
+
+    <!-- One <li> per game. href is the full address of the game on its own subdomain. -->
+    <ul class="games">
+      <li>
+        <a class="game" href="https://play.myosincos.info/">
+          <img src="icons/cards.svg" alt="">
+          <b>Карточный стол</b>
+          <span>Пятая карта · Blackjack</span>
+        </a>
+      </li>
+      <li>
+        <a class="game" href="https://amazin-table.myosincos.info/">
+          <img src="icons/amazing-table.svg" alt="">
+          <b>Amazing Table</b>
+          <span>Тренировка внимания</span>
+        </a>
+      </li>
+    </ul>
+  </main>
+  <footer>Выберите игру, чтобы начать</footer>
+</body>
+</html>

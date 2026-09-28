@@ -1,0 +1,15 @@
+{
+  "appId": "info.myosincos.games",
+  "appName": "Игры",
+  "webDir": "www",
+  "backgroundColor": "#1d1a22",
+  "android": {
+    "backgroundColor": "#1d1a22"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "native",
+      "style": "DARK"
+    }
+  }
+}

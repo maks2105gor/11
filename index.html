@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#efe5c8">
+  <meta name="description" content="Amazing Table — Train Brain: тренажёр внимания и скорости чтения на таблицах Шульте">
+  <title>Amazing Table</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <!-- Address of the game menu; remove this line when the game runs on its own. -->
+  <meta name="portal-url" content="https://games.myosincos.info/">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=PT+Sans:wght@400;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Icon set drawn in the poster style: ink strokes with rounded ends.
+       Filled parts take their colour from the --fill custom property of the <svg> using them. -->
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.6" height="14" rx="1.2" fill="currentColor"/><rect x="13.9" y="5" width="3.6" height="14" rx="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5.5M11 6l-6 6 6 6"/></symbol>
+    <symbol id="i-replay" viewBox="0 0 24 24"><path d="M19.5 12.5a7.5 7.5 0 1 1-2.2-5.8"/><path d="M19.5 4v4.5H15"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path style="fill: var(--fill, none)" d="M12 3.2l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 17l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></symbol>
+    <symbol id="i-stats" viewBox="0 0 24 24"><rect x="4" y="12" width="4" height="8" rx="1"/><rect x="10" y="5" width="4" height="15" rx="1"/><rect x="16" y="9" width="4" height="11" rx="1"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7.5h16M4 16.5h16"/><circle cx="9" cy="7.5" r="2.6" style="fill: var(--fill, none)"/><circle cx="15" cy="16.5" r="2.6" style="fill: var(--fill, none)"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8" style="fill: var(--fill, none)"/><path d="M12 9v4.2l2.8 1.8M10 2.8h4"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M6 21V4"/><path d="M6 4.5h11l-2.4 4 2.4 4H6" style="fill: var(--fill, none)"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.5"/><circle cx="12" cy="16.9" r=".6" fill="currentColor"/></symbol>
+  </svg>
+  <main id="app">
+    <!-- Menu: one poster made of tiles, like the board itself -->
+    <section class="screen active" id="screen-menu">
+      <div class="mosaic split">
+        <div class="col">
+        <a class="tile strip home" id="portal-link" href="/" hidden>
+          <svg class="icon" aria-hidden="true"><use href="#i-back"/></svg><b>Все игры</b>
+        </a>
+        <div class="tiles brand">
+          <div class="tile f3 logo" aria-hidden="true">
+            <svg viewBox="0 0 120 120">
+              <ellipse cx="60" cy="60" rx="52" ry="52" class="logo-ring"/>
+              <line x1="60" y1="8" x2="60" y2="112" class="logo-line"/>
+              <text x="33" y="76" class="logo-num">4</text>
+              <text x="87" y="76" class="logo-num red">2</text>
+            </svg>
+          </div>
+          <div class="tile title-tile">
+            <h1>Amazing Table</h1>
+            <p class="tagline">Train Brain</p>
+          </div>
+        </div>
+
+        <div class="tile strip"><b>Поле</b><span id="layout-hint"></span></div>
+        <div class="choices" id="layout-list" role="radiogroup" aria-label="Поле"></div>
+
+        <div class="tile strip"><b>Режим</b><span id="mode-hint"></span></div>
+        <div class="choices modes grow" id="mode-list" role="radiogroup" aria-label="Режим"></div>
+        </div>
+        <div class="col">
+
+        <div class="tile strip"><b>Цель</b><span id="challenge-hint"></span></div>
+        <div class="choices" id="challenge-list" role="radiogroup" aria-label="Цель"></div>
+
+        <div class="tile strip"><b id="level-title">Уровень</b><span id="best-line"></span></div>
+        <div class="choices levels" id="size-list" role="radiogroup" aria-label="Уровень"></div>
+
+        <button class="tile f1 play grow" id="btn-start">Играть <svg class="icon" aria-hidden="true"><use href="#i-play"/></svg></button>
+        <div class="tiles">
+          <button class="tile btn" id="btn-stats"><svg class="icon" aria-hidden="true"><use href="#i-stats"/></svg>Статистика</button>
+          <button class="tile btn f2" id="btn-settings"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>Настройки</button>
+          <button class="tile btn" id="btn-help"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg>Как играть</button>
+        </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Game -->
+    <section class="screen" id="screen-game">
+      <div class="mosaic hud-mosaic">
+        <div class="tiles hud">
+          <button class="tile btn quit" id="btn-quit" aria-label="Выйти в меню"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+          <div class="tile hud-item target-tile">
+            <span class="hud-label">Найдите</span>
+            <span class="hud-target" id="hud-target">1</span>
+          </div>
+          <div class="tile hud-item">
+            <span class="hud-label" id="hud-miss-label">Ошибки</span>
+            <span class="hud-value" id="hud-miss">0</span>
+          </div>
+          <div class="tile hud-item timer-tile">
+            <button class="timer" id="btn-pause" aria-label="Пауза">
+              <svg class="icon timer-icon" id="pause-icon" aria-hidden="true"><use href="#i-pause"/></svg>
+              <span class="timer-time" id="hud-time">00:00</span>
+            </button>
+          </div>
+        </div>
+        <div class="tile progress"><div class="progress-bar" id="progress-bar"></div></div>
+      </div>
+      <div class="board-wrap" id="board-wrap">
+        <div class="board" id="board"></div>
+        <svg class="chaos" id="chaos" viewBox="0 0 1600 900" hidden aria-label="Игровое поле"></svg>
+        <button class="paused" id="paused" hidden><b>Пауза</b><small>Нажмите, чтобы продолжить</small></button>
+        <div class="focus-dot" id="focus-dot" aria-hidden="true"></div>
+        <div class="countdown" id="countdown" aria-live="assertive"></div>
+      </div>
+      <p class="game-hint" id="game-hint"></p>
+    </section>
+
+    <!-- Result -->
+    <section class="screen" id="screen-result">
+      <div class="mosaic split">
+        <div class="col">
+        <div class="tile strip f1 badge" id="result-badge"><b>Новый рекорд!</b></div>
+        <div class="tile strip"><b id="result-title">Готово!</b></div>
+        <div class="tiles">
+          <div class="tile result-time-tile">
+            <span class="hud-label" id="result-main-label">Время</span>
+            <p class="result-time" id="result-time">0.00</p>
+          </div>
+          <div class="tile f2 stars-tile">
+            <div class="stars" id="result-stars"></div>
+            <p class="result-sub" id="result-rating"></p>
+          </div>
+        </div>
+        <div class="tiles">
+          <div class="tile stat"><span class="hud-label">Ошибки</span><b id="result-miss">0</b></div>
+          <div class="tile stat"><span class="hud-label" id="result-per-label">На клетку</span><b id="result-per">0</b></div>
+          <div class="tile stat f3"><span class="hud-label">Рекорд</span><b id="result-best">—</b></div>
+        </div>
+        </div>
+        <div class="col">
+        <button class="tile play f1 grow" id="btn-again">Ещё раз <svg class="icon" aria-hidden="true"><use href="#i-replay"/></svg></button>
+        <button class="tile btn" id="btn-menu">В меню</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="screen" id="screen-stats">
+      <div class="mosaic">
+        <div class="tiles topbar">
+          <button class="tile btn back" data-back aria-label="Назад"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg></button>
+          <h2 class="tile title-cell">Статистика</h2>
+        </div>
+        <div class="tiles totals" id="totals"></div>
+        <div class="tile strip"><b>Рекорды</b><span>наведите на время — увидите среднее</span></div>
+        <div class="tile records-wrap" id="records"></div>
+        <div class="tile strip"><b>Последние игры</b></div>
+        <div class="tile"><ul class="history" id="history"></ul></div>
+        <button class="tile btn f1" id="btn-reset">Сбросить статистику</button>
+      </div>
+    </section>
+
+    <!-- Settings -->
+    <section class="screen" id="screen-settings">
+      <div class="mosaic">
+        <div class="tiles topbar">
+          <button class="tile btn back" data-back aria-label="Назад"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg></button>
+          <h2 class="tile title-cell">Настройки</h2>
+        </div>
+        <label class="tile toggle"><span>Показывать, что искать<small>Подсказка над полем</small></span>
+          <input type="checkbox" id="set-showTarget" data-setting="showTarget"><i></i></label>
+        <label class="tile toggle"><span>Отмечать найденные<small>Найденные числа тускнеют (кроме уровня «Эксперт»)</small></span>
+          <input type="checkbox" id="set-markFound" data-setting="markFound"><i></i></label>
+        <label class="tile toggle"><span>Перемешивать после нажатия<small>Числа меняются местами после каждого верного ответа</small></span>
+          <input type="checkbox" id="set-shuffleOnHit" data-setting="shuffleOnHit"><i></i></label>
+        <label class="tile toggle"><span>Точка фокуса<small>Смотрите в центр, ищите периферийным зрением</small></span>
+          <input type="checkbox" id="set-focusDot" data-setting="focusDot"><i></i></label>
+        <label class="tile toggle"><span>Отсчёт перед стартом<small>3 — 2 — 1</small></span>
+          <input type="checkbox" id="set-countdown" data-setting="countdown"><i></i></label>
+        <label class="tile toggle"><span>Звук</span>
+          <input type="checkbox" id="set-sound" data-setting="sound"><i></i></label>
+        <label class="tile toggle"><span>Вибрация при ошибке</span>
+          <input type="checkbox" id="set-vibrate" data-setting="vibrate"><i></i></label>
+      </div>
+    </section>
+
+    <!-- Help -->
+    <section class="screen" id="screen-help">
+      <div class="mosaic">
+        <div class="tiles topbar">
+          <button class="tile btn back" data-back aria-label="Назад"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg></button>
+          <h2 class="tile title-cell">Как играть</h2>
+        </div>
+        <div class="tile prose">
+          <p><b>Таблица Шульте</b> — классический тренажёр внимания, периферийного зрения и скорости чтения.</p>
+          <p>Нажимайте на клетки по порядку как можно быстрее. Таймер запускается сразу после отсчёта (или с первого нажатия, если отсчёт выключен). Нажмите на красный таймер, чтобы поставить игру на паузу.</p>
+        </div>
+        <div class="tile strip f2"><b>Поле</b></div>
+        <div class="tile prose">
+          <ul>
+            <li><b>Хаос</b> — поле нарезано на клетки разных форм: прямоугольники, эллипсы, треугольники, веера и ромбы. Числа разного размера, некоторые вытянуты или повёрнуты. Уровни: Лёгкий 30, Средний 60, Сложный 90 и <b>Эксперт 120</b> — числа наклонены под разными углами, а найденные клетки не тускнеют.</li>
+            <li><b>Сетка</b> — классическая квадратная таблица Шульте от 3×3 до 9×9.</li>
+          </ul>
+        </div>
+        <div class="tile strip f1"><b>Цель</b></div>
+        <div class="tile prose">
+          <ul>
+            <li><b>На скорость</b> — найдите все числа поля как можно быстрее.</li>
+            <li><b>Минута</b> — за 60 секунд соберите как можно больше чисел по порядку. Собрали всё поле — сразу появится новое, счёт продолжится. Каждая ошибка отнимает 2 секунды.</li>
+          </ul>
+        </div>
+        <div class="tile strip f3"><b>Режимы</b></div>
+        <div class="tile prose">
+          <ul>
+            <li><b>Числа</b> — от 1 до последнего.</li>
+            <li><b>Обратный счёт</b> — от последнего к 1.</li>
+            <li><b>Буквы</b> — по алфавиту (без Ё, Й, Ъ, Ь).</li>
+            <li><b>Красно-чёрная</b> (таблица Горбова) — чередуйте: чёрная 1, красная с наибольшим числом, чёрная 2, следующая красная по убыванию и так далее. Тренирует переключение внимания.</li>
+          </ul>
+        </div>
+        <div class="tile strip f1"><b>Советы</b></div>
+        <div class="tile prose">
+          <ul>
+            <li>Держите взгляд в центре поля и старайтесь видеть его целиком.</li>
+            <li>Подчёркнутые числа (6, 9, 18, 81…) помогают не спутать перевёрнутые цифры.</li>
+            <li>Не проговаривайте числа про себя.</li>
+            <li>Занимайтесь по 5–10 минут в день — результат растёт быстро.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

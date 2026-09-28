@@ -1,0 +1,17 @@
+{
+  "name": "games-android",
+  "version": "1.0.0",
+  "description": "Android app with the game menu, Amazing Table and the card table, built with Capacitor",
+  "private": true,
+  "scripts": {
+    "www": "node scripts/build-www.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/core": "^8.5.2"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.2"
+  }
+}

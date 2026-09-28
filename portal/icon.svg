@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Game hub: four squares, like the menu itself; one burgundy, one cream, gold outline. -->
+  <rect width="512" height="512" rx="112" fill="#1d1a22"/>
+  <rect x="96" y="96" width="140" height="140" rx="32" fill="#3b1022"/>
+  <rect x="276" y="96" width="140" height="140" rx="32" fill="#fbf5df"/>
+  <rect x="96" y="276" width="140" height="140" rx="32" fill="none" stroke="#f0d48a" stroke-width="14"/>
+  <rect x="276" y="276" width="140" height="140" rx="32" fill="none" stroke="#f0d48a" stroke-width="14" stroke-dasharray="22 18"/>
+</svg>

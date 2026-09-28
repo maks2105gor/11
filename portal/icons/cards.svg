@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Card table: two fanned cards in gold on the burgundy of the card game. -->
+  <rect width="512" height="512" rx="112" fill="#3b1022"/>
+  <rect x="24" y="24" width="464" height="464" rx="92" fill="none" stroke="#5a1d35" stroke-width="8"/>
+  <g stroke="#f0d48a" stroke-width="14" stroke-linejoin="round">
+    <rect x="118" y="138" width="170" height="240" rx="24" fill="#4a1429" transform="rotate(-12 203 258)"/>
+    <rect x="224" y="124" width="170" height="240" rx="24" fill="#57182f" transform="rotate(10 309 244)"/>
+  </g>
+  <g fill="#f0d48a" transform="rotate(10 309 244)">
+    <path d="M309 190c-22 26-44 38-44 58a22 22 0 0 0 38 15l-7 24h26l-7-24a22 22 0 0 0 38-15c0-20-22-32-44-58z"/>
+    <text x="252" y="172" font-family="'PT Serif', Georgia, serif" font-size="46" font-weight="700">5</text>
+  </g>
+</svg>
