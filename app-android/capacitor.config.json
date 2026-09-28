@@ -1,15 +1,15 @@
 {
-  "appId": "info.myosincos.amazingtable",
-  "appName": "Amazing Table",
+  "appId": "info.myosincos.games",
+  "appName": "Игры",
   "webDir": "www",
-  "backgroundColor": "#efe5c8",
+  "backgroundColor": "#1d1a22",
   "android": {
-    "backgroundColor": "#efe5c8"
+    "backgroundColor": "#1d1a22"
   },
   "plugins": {
     "SystemBars": {
       "insetsHandling": "native",
-      "style": "LIGHT"
+      "style": "DARK"
     }
   }
 }

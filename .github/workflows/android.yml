@@ -1,6 +1,7 @@
 name: Android APK
 
-# Builds the Android app of Amazing Table and publishes the APK as the
+# Builds the "Игры" Android app (game menu, Amazing Table, card table) and
+# publishes the APK as the
 # "android-latest" release, so it can be downloaded straight to a phone.
 on:
   push:
@@ -10,6 +11,8 @@ on:
       - css/**
       - js/**
       - icon.svg
+      - portal/**
+      - cards/**
       - app-android/**
       - .github/workflows/android.yml
   workflow_dispatch:
@@ -51,7 +54,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: amazing-table-android
+          name: games-android
           path: app-android/dist/*
           if-no-files-found: error
 
@@ -63,5 +66,5 @@ jobs:
           gh release delete android-latest --yes --cleanup-tag 2>/dev/null || true
           gh release create android-latest app-android/dist/* \
             --target "$GITHUB_SHA" --prerelease \
-            --title "Amazing Table для Android — сборка ${{ github.run_number }}" \
+            --title "Игры для Android — сборка ${{ github.run_number }}" \
             --notes "Сборка ${{ github.run_number }} из ветки ${{ github.ref_name }} (коммит ${GITHUB_SHA::7}), подпись: $signed. Скачайте APK на телефон и откройте его, чтобы установить."

@@ -1,6 +1,6 @@
-PT Sans: Copyright (c) 2010 ParaType Inc. (http://www.paratype.com/public),
-with Reserved Font Names "PT Sans" and "ParaType".
-Oswald: see below. Both fonts are licensed under the SIL Open Font License, Version 1.1.
+PT Sans, PT Serif: Copyright (c) 2010 ParaType Inc. (http://www.paratype.com/public),
+with Reserved Font Names "PT Sans", "PT Serif" and "ParaType".
+Oswald: see below. All fonts are licensed under the SIL Open Font License, Version 1.1.
 
 Copyright 2016 The Oswald Project Authors (https://github.com/googlefonts/OswaldFont)
 

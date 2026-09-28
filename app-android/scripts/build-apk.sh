@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the Android app. Run from anywhere; needs Node 20+, JDK 21 and the Android SDK
+# Builds the "Игры" Android app (game menu, Amazing Table, card table). Run from anywhere; needs Node 20+, JDK 21 and the Android SDK
 # (GitHub Actions runners have all three).
 #
 #   VERSION_CODE=5 ./app-android/scripts/build-apk.sh
@@ -20,7 +20,7 @@ node scripts/build-www.mjs
 rm -rf android
 npx cap add android
 npx capacitor-assets generate --android \
-  --iconBackgroundColor '#4b5058' --splashBackgroundColor '#efe5c8' --splashBackgroundColorDark '#efe5c8'
+  --iconBackgroundColor '#1d1a22' --splashBackgroundColor '#1d1a22' --splashBackgroundColorDark '#1d1a22'
 sed -i "s/versionCode 1$/versionCode $VERSION_CODE/; s/versionName \"1.0\"/versionName \"$VERSION_NAME\"/" \
   android/app/build.gradle
 grep -q "versionCode $VERSION_CODE" android/app/build.gradle || { echo "versionCode not set" >&2; exit 1; }
@@ -36,12 +36,12 @@ if [ -n "${ANDROID_KEYSTORE_BASE64:-}" ]; then
     -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
     -Pandroid.injected.signing.key.password="$ANDROID_KEY_PASSWORD"
   rm -f release.keystore
-  cp app/build/outputs/apk/release/app-release.apk "../dist/amazing-table-$VERSION_NAME.apk"
-  cp app/build/outputs/bundle/release/app-release.aab "../dist/amazing-table-$VERSION_NAME.aab"
+  cp app/build/outputs/apk/release/app-release.apk "../dist/games-$VERSION_NAME.apk"
+  cp app/build/outputs/bundle/release/app-release.aab "../dist/games-$VERSION_NAME.aab"
 else
   mkdir -p ~/.android
   cp ../debug.keystore ~/.android/debug.keystore
   ./gradlew --no-daemon assembleDebug
-  cp app/build/outputs/apk/debug/app-debug.apk "../dist/amazing-table-$VERSION_NAME.apk"
+  cp app/build/outputs/apk/debug/app-debug.apk "../dist/games-$VERSION_NAME.apk"
 fi
 ls -la ../dist
